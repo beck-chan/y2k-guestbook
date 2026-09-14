@@ -1,0 +1,366 @@
+/*
+  Reference CSS for colour and font elements.
+  Not imported — does not affect the live site.
+  Color, and fonts only — copy desired selectors into Settings → custom theme.
+
+  Uncomment the @import below (or add @font-face) to load extra fonts. 
+  Imported fonts do not show up in the default font drop-downs.
+
+  Theme tokens:
+    --bg              page background
+    --fg              primary text / borders
+    --text            body text
+    --muted           focus rings, secondary text
+    --accent          chrome / toolbars
+    --bubble          comment bubble fill
+    --bubble-nested   nested / reply bubble fill
+    --link            link colour
+    --main-font      body copy
+    --accent-font      display / accent
+
+  Font tokens set in JS (guestbookThemeVars):
+    --guestbook-main-font
+    --guestbook-accent-font
+    --guestbook-main-scale
+    --guestbook-accent-scale
+*/
+
+/* @import url("https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap"); */
+
+:root {
+  --bg: #ffffff;
+  --fg: #000000;
+  --text: #111111;
+  --muted: #7f7f7f;
+  --accent: #9f9f9f;
+  --bubble: #f0f0f0;
+  --bubble-nested: #e1e1e1;
+  --link: #0000ee;
+  --main-font: "Times New Roman", Times, serif;
+  --accent-font: "Comic Sans MS", "Comic Sans", cursive;
+}
+
+body {
+  color: var(--text);
+  font-family: var(--main-font);
+  background: var(--bg);
+}
+
+.comment-bubble {
+  border: 2px solid var(--fg);
+  background: var(--bubble);
+  color: var(--fg);
+}
+
+.comment-bubble.is-nested {
+  background: var(--bubble-nested);
+}
+
+.comment-action {
+  color: var(--link);
+  color: LinkText;
+  font-family: var(--accent-font);
+  text-decoration: underline;
+}
+
+.comment-action:hover {
+  color: var(--link);
+  color: LinkText;
+  text-decoration: none;
+}
+
+.comment-action:focus-visible {
+  outline: 2px solid var(--muted);
+}
+
+.comment-page {
+  color: var(--link);
+  color: LinkText;
+  font-family: var(--accent-font);
+  text-decoration: underline;
+}
+
+.comment-page:hover {
+  color: var(--link);
+  color: LinkText;
+  text-decoration: none;
+}
+
+.comment-page.is-status {
+  color: var(--fg);
+  text-decoration: none;
+  pointer-events: none;
+  cursor: default;
+}
+
+.comment-page-current {
+  color: var(--accent);
+}
+
+.comment-page.is-disabled {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.comment-page:focus-visible {
+  outline: 2px solid var(--muted);
+}
+
+.comment-name {
+  color: var(--muted);
+  font-family: var(--accent-font);
+}
+
+.comment-time {
+  color: var(--muted);
+  font-family: var(--main-font);
+}
+
+.comment-compose .comment-name-input {
+  color: var(--muted);
+  font-family: var(--accent-font);
+}
+
+.comment-name-input::placeholder {
+  color: var(--muted);
+}
+
+.comment-body {
+  color: var(--fg);
+  font-family: var(--main-font);
+}
+
+.comment-email {
+  color: var(--muted);
+  font-family: var(--main-font);
+}
+
+.comment-email::placeholder {
+  color: var(--muted);
+}
+
+.comment-input {
+  color: var(--fg);
+  font-family: var(--main-font);
+}
+
+.comment-input::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.admin-page {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--main-font);
+}
+
+.guestbook-title {
+  color: var(--fg);
+  font-family: var(--accent-font);
+}
+
+.hit-counter-label {
+  color: var(--muted);
+  font-family: var(--accent-font);
+}
+
+.hit-counter-digits span {
+  border: 2px solid var(--muted);
+  background: var(--bubble);
+  color: var(--muted);
+  font-family: var(--accent-font);
+}
+
+.guestbook-login {
+  border: 2px solid var(--link);
+  border-color: LinkText;
+  color: var(--link);
+  color: LinkText;
+  font-family: var(--accent-font);
+  text-decoration: underline;
+}
+
+.guestbook-login:hover,
+.guestbook-login:focus-visible {
+  color: var(--link);
+  color: LinkText;
+  text-decoration: underline;
+}
+
+.guestbook-login:focus-visible {
+  outline: 2px solid var(--muted);
+}
+
+.built-on {
+  background: #000;
+  color: #cfcfcf;
+  font-family: "futura-pt", "Futura PT", Futura, sans-serif;
+  font-variant: small-caps;
+  border-radius: 999px;
+}
+
+.built-on a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.admin-title {
+  color: var(--fg);
+  font-family: var(--accent-font);
+}
+
+.admin-lede {
+  color: var(--muted);
+  font-family: var(--main-font);
+}
+
+.admin-filter {
+  border: 2px solid var(--fg);
+  background: var(--bubble);
+  color: var(--fg);
+  font-family: var(--main-font);
+}
+
+.admin-filter-search {
+  font-family: var(--accent-font);
+}
+
+.admin-filter-search::placeholder {
+  color: var(--muted);
+}
+
+.admin-date-range-sep {
+  color: var(--muted);
+  font-family: var(--main-font);
+}
+
+.admin-filter:focus-visible {
+  outline: 2px solid var(--muted);
+}
+
+.admin-empty {
+  color: var(--muted);
+  font-family: var(--main-font);
+}
+
+.admin-comment-email {
+  color: var(--muted);
+  font-family: var(--main-font);
+}
+
+.admin-mark-read {
+  color: var(--muted);
+  font-family: var(--accent-font);
+}
+
+.admin-mark-read input {
+  accent-color: var(--fg);
+}
+
+.admin-comment-link {
+  color: var(--link);
+  color: LinkText;
+  font-family: var(--accent-font);
+  text-decoration: underline;
+}
+
+.admin-comment-link:hover {
+  color: var(--link);
+  color: LinkText;
+  text-decoration: none;
+}
+
+.admin-comment-link:focus-visible {
+  outline: 2px solid var(--muted);
+}
+
+.admin-setting-label {
+  color: var(--muted);
+  font-family: var(--accent-font);
+}
+
+.admin-setting-toggle button {
+  border: 2px solid var(--fg);
+  background: var(--bubble);
+  color: var(--fg);
+  font-family: var(--accent-font);
+}
+
+.admin-setting-toggle button.is-active {
+  border-color: var(--fg);
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.admin-setting-toggle button:focus-visible {
+  outline: 2px solid var(--muted);
+}
+
+.admin-setting-theme::placeholder {
+  color: var(--fg);
+}
+
+.admin-setting-allowlist::placeholder {
+  color: var(--fg);
+}
+
+.guestbook-themed {
+  --guestbook-main-font: var(--main-font);
+  --guestbook-accent-font: var(--accent-font);
+}
+
+.guestbook-themed .comment-body,
+.guestbook-themed .comment-email,
+.guestbook-themed .comment-input,
+.guestbook-themed .comment-time,
+.guestbook-themed .admin-lede,
+.guestbook-themed .admin-comment-email,
+.guestbook-themed .admin-empty,
+.guestbook-themed .admin-filter,
+.guestbook-themed .admin-date-range-sep {
+  font-family: var(--guestbook-main-font);
+}
+
+.guestbook-themed .guestbook-title,
+.guestbook-themed .admin-title,
+.guestbook-themed .comment-name,
+.guestbook-themed .comment-compose .comment-name-input,
+.guestbook-themed .comment-action,
+.guestbook-themed .comment-page,
+.guestbook-themed .admin-comment-link,
+.guestbook-themed .admin-mark-read,
+.guestbook-themed .admin-setting-label,
+.guestbook-themed .admin-setting-toggle button,
+.guestbook-themed .admin-filter-search,
+.guestbook-themed .admin-tools-toggle,
+.guestbook-themed .guestbook-login,
+.guestbook-themed .hit-counter-label,
+.guestbook-themed .hit-counter-digits span {
+  font-family: var(--guestbook-accent-font);
+}
+
+@media (max-width: 1280px) {
+  .admin-page:has(.page-split)::after {
+    background: linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0) 0%,
+      rgb(255 255 255 / 0.72) 45%,
+      var(--bg) 100%
+    );
+  }
+
+  .admin-tools {
+    background: var(--bg);
+  }
+
+  .admin-tools-toggle {
+    color: var(--fg);
+    font-family: var(--accent-font);
+  }
+
+  .admin-tools-caret {
+    border-right: 1.6px solid var(--fg);
+    border-bottom: 1.6px solid var(--fg);
+  }
+}

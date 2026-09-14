@@ -1,0 +1,286 @@
+-- ---------------------------------------------------------------------------
+-- Helpers
+-- ---------------------------------------------------------------------------
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+as $fn$
+  select coalesce(
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin',
+    false
+  );
+$fn$;
+
+-- ---------------------------------------------------------------------------
+-- comments + public view (email hidden from anon)
+-- ---------------------------------------------------------------------------
+
+create table public.comments (
+  id uuid primary key default gen_random_uuid(),
+  display_name text not null,
+  email text,
+  body text not null,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index comments_created_at_idx on public.comments (created_at desc);
+
+create or replace function public.set_comments_updated_at()
+returns trigger
+language plpgsql
+as $fn$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$fn$;
+
+create trigger comments_set_updated_at
+  before update on public.comments
+  for each row
+  execute function public.set_comments_updated_at();
+
+create view public.comments_public as
+  select id, display_name, body, created_at, updated_at
+  from public.comments;
+
+alter table public.comments enable row level security;
+
+create policy "anon_insert_comments"
+  on public.comments
+  for insert
+  to anon
+  with check (true);
+
+create policy "admin_select_comments"
+  on public.comments
+  for select
+  to authenticated
+  using (public.is_admin());
+
+create policy "admin_insert_comments"
+  on public.comments
+  for insert
+  to authenticated
+  with check (public.is_admin());
+
+create policy "admin_update_comments"
+  on public.comments
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "admin_delete_comments"
+  on public.comments
+  for delete
+  to authenticated
+  using (public.is_admin());
+
+grant select on public.comments_public to anon, authenticated;
+grant insert on public.comments to anon;
+grant select, insert, update, delete on public.comments to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- admin allowlist + Before User Created hook + promote trigger
+-- ---------------------------------------------------------------------------
+
+create table public.admin_allowlist (
+  email text primary key,
+  created_at timestamptz not null default now(),
+  constraint admin_allowlist_email_lowercase check (email = lower(email))
+);
+
+alter table public.admin_allowlist enable row level security;
+-- No policies: anon/authenticated cannot read or write.
+-- service_role bypasses RLS but still needs table grants (auto-expose was off).
+grant select, insert, update, delete on table public.admin_allowlist to service_role;
+
+create or replace function public.hook_before_user_created(event jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  user_email text;
+begin
+  user_email := lower(event->'user'->>'email');
+
+  if user_email is null
+     or user_email = ''
+     or not exists (
+       select 1 from public.admin_allowlist where email = user_email
+     ) then
+    return jsonb_build_object(
+      'error',
+      jsonb_build_object(
+        'message', 'Not authorized',
+        'http_code', 403
+      )
+    );
+  end if;
+
+  -- Stamp admin role into app_metadata for the new user (JWT + RLS).
+  return jsonb_build_object(
+    'user',
+    jsonb_build_object(
+      'app_metadata',
+      jsonb_build_object('role', 'admin')
+    )
+  );
+end;
+$fn$;
+
+grant execute on function public.hook_before_user_created(jsonb) to supabase_auth_admin;
+revoke execute on function public.hook_before_user_created(jsonb) from authenticated, anon, public;
+grant usage on schema public to supabase_auth_admin;
+grant select on table public.admin_allowlist to supabase_auth_admin;
+
+create or replace function public.set_admin_role_from_allowlist()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+begin
+  if new.email is not null
+     and exists (
+       select 1 from public.admin_allowlist where email = lower(new.email)
+     ) then
+    new.raw_app_meta_data :=
+      coalesce(new.raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb;
+  end if;
+  return new;
+end;
+$fn$;
+
+drop trigger if exists on_auth_user_created_set_admin on auth.users;
+create trigger on_auth_user_created_set_admin
+  before insert on auth.users
+  for each row
+  execute function public.set_admin_role_from_allowlist();
+
+-- If the signed-in user is on the allowlist but missing app_metadata.role,
+-- stamp it so JWT/RLS checks succeed. Call from auth callback, then refreshSession.
+create or replace function public.ensure_admin_role()
+returns boolean
+language plpgsql
+security definer
+set search_path = public, auth
+as $fn$
+declare
+  uid uuid := auth.uid();
+  user_email text;
+begin
+  if uid is null then
+    return false;
+  end if;
+
+  select lower(email) into user_email from auth.users where id = uid;
+
+  if user_email is null
+     or not exists (
+       select 1 from public.admin_allowlist where email = user_email
+     ) then
+    return false;
+  end if;
+
+  update auth.users
+  set raw_app_meta_data =
+    coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+  where id = uid
+    and coalesce(raw_app_meta_data->>'role', '') is distinct from 'admin';
+
+  return true;
+end;
+$fn$;
+
+revoke all on function public.ensure_admin_role() from public, anon;
+grant execute on function public.ensure_admin_role() to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- guestbook_settings (singleton id = 1)
+-- ---------------------------------------------------------------------------
+
+create table public.guestbook_settings (
+  id integer primary key check (id = 1),
+  title text not null default '',
+  placeholder text not null default '',
+  marquee boolean not null default true,
+  capture_email boolean not null default true,
+  main_font text not null default 'futura-pt',
+  main_font_size text not null default 'regular',
+  accent_font text not null default 'peony',
+  accent_font_size text not null default 'regular',
+  page_size integer not null default 10,
+  comment_length integer not null default 1000,
+  rate_limit_count integer not null default 1,
+  rate_limit_minutes integer not null default 5,
+  rate_limit_daily integer not null default 2,
+  profanity_allow_list text not null default '',
+  custom_theme text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+insert into public.guestbook_settings (
+  id,
+  title,
+  placeholder,
+  marquee,
+  capture_email,
+  main_font,
+  main_font_size,
+  accent_font,
+  accent_font_size,
+  page_size,
+  comment_length,
+  rate_limit_count,
+  rate_limit_minutes,
+  rate_limit_daily,
+  profanity_allow_list,
+  custom_theme
+) values (
+  1,
+  '',
+  E'Sign the guestbook! Yes, just like it''s 2001.\nNo editing, no deleting, just thoughts into the void.\n\n(Please be kind.)',
+  true,
+  true,
+  'futura-pt',
+  'regular',
+  'peony',
+  'regular',
+  10,
+  1000,
+  1,
+  5,
+  2,
+  '',
+  ''
+);
+
+alter table public.guestbook_settings enable row level security;
+
+create policy "anon_select_guestbook_settings"
+  on public.guestbook_settings
+  for select
+  to anon, authenticated
+  using (true);
+
+create policy "admin_update_guestbook_settings"
+  on public.guestbook_settings
+  for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+grant select on public.guestbook_settings to anon, authenticated;
+grant update on public.guestbook_settings to authenticated;
+
+-- Existing projects: no-op if comment_length is already present.
+alter table public.guestbook_settings
+  add column if not exists comment_length integer not null default 1000;
