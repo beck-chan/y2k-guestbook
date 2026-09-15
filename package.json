@@ -13,6 +13,10 @@
     "scripts/schema.sql",
     "supabase/config.toml",
     "supabase/functions",
+    "cucumber.yaml",
+    "features/features",
+    "features/support/*.ts",
+    "features/step_definitions",
     ".env.example",
     "instrumentation-client.ts.example"
   ],
@@ -37,8 +41,8 @@
     "delete-admin": "node scripts/cli.mjs delete-admin",
     "deploy-notifs": "node scripts/cli.mjs deploy-notifs",
     "init-instrumentation": "node scripts/cli.mjs init-instrumentation",
-    "test:cucumber": "npx cucumber-js",
-    "test:cucumber:admin": "npx cucumber-js -p admin"
+    "test:cucumber": "node scripts/cli.mjs test",
+    "test:cucumber:admin": "node scripts/cli.mjs test -p admin"
   },
   "peerDependencies": {
     "@supabase/ssr": "^0.12.0",

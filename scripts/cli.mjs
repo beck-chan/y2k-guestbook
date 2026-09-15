@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
@@ -35,6 +35,7 @@ function usage(exit = true) {
   console.error("       npx y2k-guestbook delete-admin you@gmail.com");
   console.error("       npx y2k-guestbook deploy-notifs [--project-ref <ref>]");
   console.error("       npx y2k-guestbook init-instrumentation");
+  console.error("       npx y2k-guestbook test [cucumber-js args]");
   if (exit) process.exit(1);
 }
 
@@ -105,6 +106,96 @@ function deployNotifs(args) {
     ],
     { cwd: packageRoot, env: process.env, stdio: "inherit", shell: true },
   );
+  process.exit(result.status ?? 1);
+}
+
+function posix(file) {
+  return file.replaceAll("\\", "/");
+}
+
+function packagedFeatureArg(arg) {
+  const normalized = arg.replaceAll("\\", "/");
+  if (normalized === "features" || normalized.startsWith("features/")) {
+    return posix(resolve(packageRoot, normalized));
+  }
+  return arg;
+}
+
+function cucumberArgv(rawArgs) {
+  let profile = "default";
+  let sawFeature = false;
+  const forwarded = [];
+  const args = rawArgs.filter((arg) => arg !== "--");
+
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "-p" || arg === "--profile") {
+      profile = args[i + 1] ?? "default";
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--profile=")) {
+      profile = arg.slice("--profile=".length) || "default";
+      continue;
+    }
+    const mapped = packagedFeatureArg(arg);
+    if (mapped !== arg) sawFeature = true;
+    forwarded.push(mapped);
+  }
+
+  const html =
+    profile === "admin"
+      ? "html:features/reports/admin.html"
+      : "html:features/reports/results.html";
+  const requireFiles = [
+    posix(resolve(packageRoot, "features/support")) + "/**/*.ts",
+    posix(resolve(packageRoot, "features/step_definitions")) + "/**/*.ts",
+  ];
+  const hostSteps = resolve(process.cwd(), "features/step_definitions");
+  if (existsSync(hostSteps)) {
+    requireFiles.push(posix(hostSteps) + "/**/*.ts");
+  }
+
+  const prefix = [
+    "--require-module",
+    "tsx/cjs",
+    ...requireFiles.flatMap((glob) => ["--require", glob]),
+    "--format",
+    "progress-bar",
+    "--format",
+    html,
+    "--format-options",
+    JSON.stringify({ snippetInterface: "async-await" }),
+    "--world-parameters",
+    JSON.stringify({
+      baseUrl: "http://localhost:3000",
+      guestbookPath: "/",
+      adminPath: "/admin",
+    }),
+  ];
+  if (!sawFeature) {
+    forwarded.push(posix(resolve(packageRoot, "features/features")));
+  }
+  return [...prefix, ...forwarded];
+}
+
+function runCucumber(args) {
+  const featuresDir = resolve(packageRoot, "features/features");
+  if (!existsSync(featuresDir)) {
+    console.error(`No Cucumber features at ${featuresDir}`);
+    process.exit(1);
+  }
+  mkdirSync(resolve(process.cwd(), "features/reports"), { recursive: true });
+  mkdirSync(resolve(process.cwd(), "features/support/.auth"), {
+    recursive: true,
+  });
+
+  const result = spawnSync("npx", ["--yes", "cucumber-js", ...cucumberArgv(args)], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: "inherit",
+    shell: true,
+  });
   process.exit(result.status ?? 1);
 }
 
@@ -270,6 +361,8 @@ if (command === "allow-admin") {
   deployNotifs(rest);
 } else if (command === "init-instrumentation") {
   initInstrumentation();
+} else if (command === "test") {
+  runCucumber(rest);
 } else {
   usage();
 }
