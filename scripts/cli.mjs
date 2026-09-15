@@ -130,7 +130,17 @@ function packagedFeatureArg(arg) {
   if (normalized === "features" || normalized.startsWith("features/")) {
     return relToCwd(resolve(packageRoot, normalized));
   }
-  return arg;
+  return posix(normalized);
+}
+
+function isFeatureArg(arg) {
+  if (arg.startsWith("-")) return false;
+  const normalized = arg.replaceAll("\\", "/");
+  return (
+    normalized.endsWith(".feature") ||
+    normalized === "features" ||
+    normalized.startsWith("features/")
+  );
 }
 
 function tsFiles(dir) {
@@ -149,11 +159,17 @@ function cucumberRequireFiles() {
   return [...new Set(files)].map(relToCwd);
 }
 
-function cucumberProfileYaml(htmlFile, requireFiles) {
+function cucumberProfileYaml(htmlFile, requireFiles, featurePaths, tags) {
   const requireBlock = requireFiles
     .map((file) => `    - ${JSON.stringify(file)}`)
     .join("\n");
-  return `  requireModule:
+  const pathsBlock = featurePaths
+    .map((file) => `    - ${JSON.stringify(file)}`)
+    .join("\n");
+  const tagsBlock = tags ? `  tags: ${JSON.stringify(tags)}\n` : "";
+  return `  paths:
+${pathsBlock}
+${tagsBlock}  requireModule:
     - tsx/cjs
   require:
 ${requireBlock}
@@ -169,12 +185,12 @@ ${requireBlock}
 `;
 }
 
-function writeCucumberConfig() {
+function writeCucumberConfig(featurePaths, tags) {
   const requireFiles = cucumberRequireFiles();
   const yaml = `default:
-${cucumberProfileYaml("features/reports/results.html", requireFiles)}
+${cucumberProfileYaml("features/reports/results.html", requireFiles, featurePaths, tags)}
 admin:
-${cucumberProfileYaml("features/reports/admin.html", requireFiles)}
+${cucumberProfileYaml("features/reports/admin.html", requireFiles, featurePaths, tags)}
 `;
   const relative = "features/reports/y2k-guestbook-cucumber.yaml";
   writeFileSync(resolve(process.cwd(), relative), yaml);
@@ -182,17 +198,40 @@ ${cucumberProfileYaml("features/reports/admin.html", requireFiles)}
 }
 
 function cucumberArgv(rawArgs) {
-  let sawFeature = false;
   const forwarded = [];
-  for (const arg of rawArgs.filter((item) => item !== "--")) {
-    const mapped = packagedFeatureArg(arg);
-    if (mapped !== arg) sawFeature = true;
-    forwarded.push(mapped);
+  const featurePaths = [];
+  const tagExprs = [];
+  const args = rawArgs.filter((item) => item !== "--");
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "--tags" || arg === "-t") {
+      const value = args[i + 1];
+      if (!value || value.startsWith("-")) {
+        console.error("Missing value for --tags");
+        process.exit(1);
+      }
+      tagExprs.push(value);
+      i += 1;
+      continue;
+    }
+    if (arg.startsWith("--tags=")) {
+      tagExprs.push(arg.slice("--tags=".length));
+      continue;
+    }
+    if (isFeatureArg(arg)) {
+      featurePaths.push(packagedFeatureArg(arg));
+    } else {
+      forwarded.push(arg);
+    }
   }
-  if (!sawFeature) {
-    forwarded.push(relToCwd(resolve(packageRoot, "features/features")));
+  if (featurePaths.length === 0) {
+    featurePaths.push(relToCwd(resolve(packageRoot, "features/features")));
   }
-  return forwarded;
+  return {
+    forwarded,
+    featurePaths,
+    tags: tagExprs.length ? tagExprs.join(" and ") : "",
+  };
 }
 
 function resolveCucumberCli() {
@@ -248,10 +287,10 @@ function runCucumber(args) {
     recursive: true,
   });
 
-  const configFile = writeCucumberConfig();
-  const cucumberArgs = cucumberArgv(args);
-  const profileAdmin = cucumberArgs.some((arg, i) => {
-    const prev = cucumberArgs[i - 1];
+  const { forwarded, featurePaths, tags } = cucumberArgv(args);
+  const configFile = writeCucumberConfig(featurePaths, tags);
+  const profileAdmin = forwarded.some((arg, i) => {
+    const prev = forwarded[i - 1];
     return (
       (arg === "admin" && (prev === "-p" || prev === "--profile")) ||
       arg === "--profile=admin"
@@ -261,12 +300,15 @@ function runCucumber(args) {
     ? resolve(reportsDir, "admin.html")
     : resolve(reportsDir, "results.html");
 
-  console.log(`Running Cucumber from ${featuresDir}`);
+  console.log(
+    `Feature files:\n${featurePaths.map((file) => `  ${file}`).join("\n")}`,
+  );
+  if (tags) console.log(`Tags: ${tags}`);
   console.log(`HTML report: ${htmlReport}`);
 
   const result = spawnSync(
     process.execPath,
-    [resolveCucumberCli(), "--config", configFile, ...cucumberArgs],
+    [resolveCucumberCli(), "--config", configFile, ...forwarded],
     {
       cwd: process.cwd(),
       env: process.env,
