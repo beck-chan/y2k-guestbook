@@ -9,8 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
@@ -122,10 +121,14 @@ function posix(file) {
   return file.replaceAll("\\", "/");
 }
 
+function relToCwd(abs) {
+  return posix(relative(process.cwd(), abs));
+}
+
 function packagedFeatureArg(arg) {
   const normalized = arg.replaceAll("\\", "/");
   if (normalized === "features" || normalized.startsWith("features/")) {
-    return posix(resolve(packageRoot, normalized));
+    return relToCwd(resolve(packageRoot, normalized));
   }
   return arg;
 }
@@ -143,7 +146,7 @@ function cucumberRequireFiles() {
     ...tsFiles(resolve(packageRoot, "features/step_definitions")),
     ...tsFiles(resolve(process.cwd(), "features/step_definitions")),
   ];
-  return [...new Set(files)];
+  return [...new Set(files)].map(relToCwd);
 }
 
 function cucumberProfileYaml(htmlFile, requireFiles) {
@@ -169,19 +172,13 @@ ${requireBlock}
 function writeCucumberConfig() {
   const requireFiles = cucumberRequireFiles();
   const yaml = `default:
-${cucumberProfileYaml(
-  posix(resolve(process.cwd(), "features/reports/results.html")),
-  requireFiles,
-)}
+${cucumberProfileYaml("features/reports/results.html", requireFiles)}
 admin:
-${cucumberProfileYaml(
-  posix(resolve(process.cwd(), "features/reports/admin.html")),
-  requireFiles,
-)}
+${cucumberProfileYaml("features/reports/admin.html", requireFiles)}
 `;
-  const file = join(tmpdir(), `y2k-guestbook-cucumber-${process.pid}.yaml`);
-  writeFileSync(file, yaml);
-  return file;
+  const relative = "features/reports/y2k-guestbook-cucumber.yaml";
+  writeFileSync(resolve(process.cwd(), relative), yaml);
+  return relative;
 }
 
 function cucumberArgv(rawArgs) {
@@ -193,7 +190,7 @@ function cucumberArgv(rawArgs) {
     forwarded.push(mapped);
   }
   if (!sawFeature) {
-    forwarded.push(posix(resolve(packageRoot, "features/features")));
+    forwarded.push(relToCwd(resolve(packageRoot, "features/features")));
   }
   return forwarded;
 }
