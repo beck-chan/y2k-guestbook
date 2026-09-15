@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { Pool } from "pg";
 import { RateLimiterPostgres, type RateLimiterRes } from "rate-limiter-flexible";
-import type { GuestbookSettings } from "#/lib/guestbookSettingsShared";
-import { guestbookRateLimits } from "#/lib/guestbookSettingsShared";
+import type { GuestbookSettings } from "./guestbookSettingsShared";
+import { guestbookRateLimits } from "./guestbookSettingsShared";
 
 type RateLimits = ReturnType<typeof guestbookRateLimits>;
 

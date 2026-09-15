@@ -4,15 +4,15 @@ import { useState, useTransition } from "react";
 import {
   loadGuestbookSettingsAction,
   saveGuestbookSettingsAction,
-} from "#/app/actions/settings";
+} from "../../app/actions/settings";
 import {
   ACCENT_FONTS,
   MAIN_FONTS,
   useGuestbookSettings,
   type FontSize,
   type GuestbookSettings,
-} from "#/lib/guestbookSettings";
-import { guestbookAdminPath } from "#/lib/guestbookPaths";
+} from "../../lib/guestbookSettings";
+import { guestbookAdminPath } from "../../lib/guestbookPaths";
 
 const PAGE_SIZES = [4, 5, 6, 7, 8, 9, 10] as const;
 

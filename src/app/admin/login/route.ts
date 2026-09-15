@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { guestbookHomeErrorPath } from "#/lib/guestbookPaths";
+import { guestbookHomeErrorPath } from "../../../lib/guestbookPaths";
 
 function siteUrl() {
   const raw = process.env.SITE_URL?.trim();

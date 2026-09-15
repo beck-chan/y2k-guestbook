@@ -10,13 +10,13 @@ import {
 import {
   DEFAULT_GUESTBOOK_SETTINGS,
   type GuestbookSettings,
-} from "#/lib/guestbookSettingsShared";
+} from "./guestbookSettingsShared";
 
 export type {
   FontSize,
   GuestbookSettings,
   GuestbookSettingsRow,
-} from "#/lib/guestbookSettingsShared";
+} from "./guestbookSettingsShared";
 
 export {
   ACCENT_FONTS,
@@ -29,7 +29,7 @@ export {
   guestbookSettingsToRow,
   guestbookThemeVars,
   normalizeGuestbookSettings,
-} from "#/lib/guestbookSettingsShared";
+} from "./guestbookSettingsShared";
 
 type SettingsContextValue = {
   settings: GuestbookSettings;

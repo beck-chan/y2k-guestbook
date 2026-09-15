@@ -6,11 +6,11 @@ import {
   setCommentRead,
   setCommentsRead,
   updateComment,
-} from "#/app/actions/comments";
-import { MarkReadCheckbox } from "#/components/_admin/MarkReadCheckbox";
-import { commentLengthError } from "#/lib/commentLimits";
-import { formatCommentTime, type GuestbookComment } from "#/lib/comments";
-import { useGuestbookSettings } from "#/lib/guestbookSettings";
+} from "../../app/actions/comments";
+import { MarkReadCheckbox } from "./MarkReadCheckbox";
+import { commentLengthError } from "../../lib/commentLimits";
+import { formatCommentTime, type GuestbookComment } from "../../lib/comments";
+import { useGuestbookSettings } from "../../lib/guestbookSettings";
 
 type CommentMode = { kind: "edit" | "delete"; id: string } | null;
 

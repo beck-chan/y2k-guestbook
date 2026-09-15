@@ -1,14 +1,14 @@
 import Link from "next/link";
-import { AdminCommentThread } from "#/components/_admin/AdminCommentThread";
-import { AdminFilters } from "#/components/_admin/AdminFilters";
-import { AdminPageFrame } from "#/components/_admin/AdminPageFrame";
-import { AdminSettings } from "#/components/_admin/AdminSettings";
+import { AdminCommentThread } from "./AdminCommentThread";
+import { AdminFilters } from "./AdminFilters";
+import { AdminPageFrame } from "./AdminPageFrame";
+import { AdminSettings } from "./AdminSettings";
 import {
   adminHref,
   type AdminFilters as FilterState,
   type GuestbookComment,
-} from "#/lib/comments";
-import { guestbookAdminPath, guestbookHomePath } from "#/lib/guestbookPaths";
+} from "../../lib/comments";
+import { guestbookAdminPath, guestbookHomePath } from "../../lib/guestbookPaths";
 
 type AdminGuestbookProps = {
   comments: GuestbookComment[];

@@ -1,8 +1,8 @@
-import { CustomTheme } from "#/components/_shared/CustomTheme";
+import { CustomTheme } from "./CustomTheme";
 import {
   GuestbookSettingsProvider,
   type GuestbookSettings,
-} from "#/lib/guestbookSettings";
+} from "../../lib/guestbookSettings";
 
 export function GuestbookSettingsShell({
   settings,

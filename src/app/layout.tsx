@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GuestbookProviders } from "#/providers";
+import { GuestbookProviders } from "../providers";
 import "./globals.css";
 
 export const metadata: Metadata = {

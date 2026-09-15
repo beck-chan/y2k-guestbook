@@ -1,4 +1,4 @@
-import { guestbookAdminPath } from "#/lib/guestbookPaths";
+import { guestbookAdminPath } from "./guestbookPaths";
 
 export type GuestbookComment = {
   id: string;

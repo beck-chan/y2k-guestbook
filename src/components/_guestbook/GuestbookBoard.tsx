@@ -1,13 +1,13 @@
 "use client";
 
-import { CommentBubbles } from "#/components/_guestbook/CommentBubbles";
-import type { GuestbookComment } from "#/lib/comments";
+import { CommentBubbles } from "./CommentBubbles";
+import type { GuestbookComment } from "../../lib/comments";
 import {
   guestbookDisplayTitle,
   guestbookPageSize,
   useGuestbookDocumentTitle,
   useGuestbookSettings,
-} from "#/lib/guestbookSettings";
+} from "../../lib/guestbookSettings";
 
 type GuestbookBoardProps = {
   initialComments: GuestbookComment[];

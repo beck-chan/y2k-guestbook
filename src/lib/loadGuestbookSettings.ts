@@ -1,11 +1,11 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { createClient } from "#/lib/supabase/server";
+import { createClient } from "./supabase/server";
 import {
   DEFAULT_GUESTBOOK_SETTINGS,
   normalizeGuestbookSettings,
   type GuestbookSettings,
   type GuestbookSettingsRow,
-} from "#/lib/guestbookSettingsShared";
+} from "./guestbookSettingsShared";
 
 export async function loadGuestbookSettings(): Promise<GuestbookSettings> {
   noStore();

@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import {
   guestbookThemeVars,
   useGuestbookSettings,
-} from "#/lib/guestbookSettings";
+} from "../../lib/guestbookSettings";
 
 const STYLE_ID = "guestbook-custom-theme";
 const VARS_ID = "guestbook-theme-vars";

@@ -4,16 +4,16 @@ import { useEffect, useState, useTransition } from "react";
 import {
   getPublicCommentsPage,
   submitComment,
-} from "#/app/actions/comments";
+} from "../../app/actions/comments";
 import {
   formatCommentTime,
   type GuestbookComment,
-} from "#/lib/comments";
-import { commentLengthError } from "#/lib/commentLimits";
+} from "../../lib/comments";
+import { commentLengthError } from "../../lib/commentLimits";
 import {
   guestbookCommentPlaceholder,
   useGuestbookSettings,
-} from "#/lib/guestbookSettings";
+} from "../../lib/guestbookSettings";
 
 type CommentBubblesProps = {
   idPrefix?: string;

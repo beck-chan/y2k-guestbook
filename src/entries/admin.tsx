@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { AdminGuestbook } from "#/components/_admin/AdminGuestbook";
-import { loadAdminComments } from "#/app/actions/comments";
+import { AdminGuestbook } from "../components/_admin/AdminGuestbook";
+import { loadAdminComments } from "../app/actions/comments";
 import {
   countAdminComments,
   filterComments,
   paginateComments,
   sortComments,
   type AdminFilters,
-} from "#/lib/comments";
-import { guestbookAdminPath, guestbookHomePath } from "#/lib/guestbookPaths";
-import { GuestbookSettingsShell } from "#/components/_shared/GuestbookSettingsShell";
-import { PageReveal } from "#/components/_shared/PageReveal";
-import { loadGuestbookSettings } from "#/lib/loadGuestbookSettings";
+} from "../lib/comments";
+import { guestbookAdminPath, guestbookHomePath } from "../lib/guestbookPaths";
+import { GuestbookSettingsShell } from "../components/_shared/GuestbookSettingsShell";
+import { PageReveal } from "../components/_shared/PageReveal";
+import { loadGuestbookSettings } from "../lib/loadGuestbookSettings";
 
 export const guestbookAdminMetadata: Metadata = {
   title: "Admin Dashboard",

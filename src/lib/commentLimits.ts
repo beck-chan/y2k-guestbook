@@ -1,7 +1,7 @@
 import {
   DEFAULT_COMMENT_BODY_MAX_LENGTH,
   guestbookCommentLength,
-} from "#/lib/guestbookSettingsShared";
+} from "./guestbookSettingsShared";
 
 export const COMMENT_NAME_MAX_LENGTH = 128;
 export const COMMENT_EMAIL_MAX_LENGTH = 254;

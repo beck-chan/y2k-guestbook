@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
-import { RouteLoading } from "#/components/_shared/RouteLoading";
+import { RouteLoading } from "./RouteLoading";
 
 type Phase = "wait" | "out" | "in";
 

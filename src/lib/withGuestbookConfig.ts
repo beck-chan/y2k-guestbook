@@ -1,10 +1,23 @@
-import type { NextConfig } from "next";
 import {
   guestbookAdminExamplePath,
   guestbookAdminPath,
 } from "./guestbookPaths";
 
 type Rewrite = { source: string; destination: string };
+
+type RewriteResult =
+  | Rewrite[]
+  | {
+      beforeFiles?: Rewrite[];
+      afterFiles?: Rewrite[];
+      fallback?: Rewrite[];
+    };
+
+type GuestbookHostConfig = {
+  transpilePackages?: string[];
+  serverExternalPackages?: string[];
+  rewrites?: RewriteResult | (() => RewriteResult | Promise<RewriteResult>);
+};
 
 function guestbookRewrites(): Rewrite[] {
   return [
@@ -15,7 +28,9 @@ function guestbookRewrites(): Rewrite[] {
   ];
 }
 
-export function withGuestbookConfig(config: NextConfig = {}): NextConfig {
+export function withGuestbookConfig<T extends GuestbookHostConfig>(
+  config: T = {} as T,
+) {
   const extra = guestbookRewrites();
 
   return {

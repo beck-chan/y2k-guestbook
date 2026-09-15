@@ -7,18 +7,18 @@ import {
   type AdminCommentRow,
   type GuestbookComment,
   type PublicCommentRow,
-} from "#/lib/comments";
-import { guestbookAdminPath, guestbookHomePath } from "#/lib/guestbookPaths";
-import { guestbookPageSize } from "#/lib/guestbookSettingsShared";
-import { clientIp } from "#/lib/clientIp";
-import { loadGuestbookSettings } from "#/lib/loadGuestbookSettings";
-import { commentLengthError } from "#/lib/commentLimits";
+} from "../../lib/comments";
+import { guestbookAdminPath, guestbookHomePath } from "../../lib/guestbookPaths";
+import { guestbookPageSize } from "../../lib/guestbookSettingsShared";
+import { clientIp } from "../../lib/clientIp";
+import { loadGuestbookSettings } from "../../lib/loadGuestbookSettings";
+import { commentLengthError } from "../../lib/commentLimits";
 import {
   checkCommentProfanity,
   profanityErrorMessage,
-} from "#/lib/profanity";
-import { consumeCommentRateLimit } from "#/lib/rate-limit";
-import { createClient } from "#/lib/supabase/server";
+} from "../../lib/profanity";
+import { consumeCommentRateLimit } from "../../lib/rate-limit";
+import { createClient } from "../../lib/supabase/server";
 
 export type ActionResult =
   | { ok: true }

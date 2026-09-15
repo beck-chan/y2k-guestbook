@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { AdminAuthErrorOverlay } from "#/components/_shared/AdminAuthErrorOverlay";
+import { AdminAuthErrorOverlay } from "./components/_shared/AdminAuthErrorOverlay";
 
 export function GuestbookProviders({ children }: { children: ReactNode }) {
   return (

@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { resolveAdminSession } from "#/lib/adminAuth";
-import { guestbookAdminPath, guestbookHomeErrorPath } from "#/lib/guestbookPaths";
+import { resolveAdminSession } from "../../../lib/adminAuth";
+import { guestbookAdminPath, guestbookHomeErrorPath } from "../../../lib/guestbookPaths";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);

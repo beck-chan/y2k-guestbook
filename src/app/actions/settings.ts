@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import {
   guestbookSettingsToRow,
   type GuestbookSettings,
-} from "#/lib/guestbookSettingsShared";
-import { guestbookAdminPath, guestbookHomePath } from "#/lib/guestbookPaths";
-import { loadGuestbookSettings } from "#/lib/loadGuestbookSettings";
-import { createClient } from "#/lib/supabase/server";
+} from "../../lib/guestbookSettingsShared";
+import { guestbookAdminPath, guestbookHomePath } from "../../lib/guestbookPaths";
+import { loadGuestbookSettings } from "../../lib/loadGuestbookSettings";
+import { createClient } from "../../lib/supabase/server";
 
 export type SettingsActionResult =
   | { ok: true; settings: GuestbookSettings }

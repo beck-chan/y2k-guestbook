@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { flags } from "#/lib/flags";
-import { FALLBACK_HIT_COUNT } from "#/lib/hitCount";
+import { flags } from "../../lib/flags";
+import { FALLBACK_HIT_COUNT } from "../../lib/hitCount";
 
 const STORAGE_KEY = "guestbook.hit-counted";
 const POLL_MS = 45_000;

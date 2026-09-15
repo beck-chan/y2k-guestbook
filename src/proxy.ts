@@ -3,8 +3,8 @@ import {
   guestbookAdminLoginPath,
   guestbookAdminPath,
   guestbookHomePath,
-} from "#/lib/guestbookPaths";
-import { updateSession } from "#/lib/supabase/proxy";
+} from "./lib/guestbookPaths";
+import { updateSession } from "./lib/supabase/proxy";
 
 function redirectWithCookies(url: URL, sessionResponse: NextResponse) {
   const redirectResponse = NextResponse.redirect(url);

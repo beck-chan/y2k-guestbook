@@ -3,8 +3,8 @@
 import { useState, type ChangeEvent, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { adminHref, type AdminFilters } from "#/lib/comments";
-import { guestbookAdminPath } from "#/lib/guestbookPaths";
+import { adminHref, type AdminFilters } from "../../lib/comments";
+import { guestbookAdminPath } from "../../lib/guestbookPaths";
 
 function SearchCommentCounts({
   totalComments,
