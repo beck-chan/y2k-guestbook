@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
@@ -34,6 +34,7 @@ function usage(exit = true) {
   console.error("Usage: npx y2k-guestbook allow-admin you@gmail.com");
   console.error("       npx y2k-guestbook delete-admin you@gmail.com");
   console.error("       npx y2k-guestbook deploy-notifs [--project-ref <ref>]");
+  console.error("       npx y2k-guestbook init-instrumentation");
   if (exit) process.exit(1);
 }
 
@@ -105,6 +106,24 @@ function deployNotifs(args) {
     { cwd: packageRoot, env: process.env, stdio: "inherit", shell: true },
   );
   process.exit(result.status ?? 1);
+}
+
+function initInstrumentation() {
+  const src = resolve(packageRoot, "instrumentation-client.ts.example");
+  if (!existsSync(src)) {
+    console.error(`No instrumentation-client.ts.example at ${src}`);
+    process.exit(1);
+  }
+  const destDir = existsSync(resolve(process.cwd(), "src"))
+    ? resolve(process.cwd(), "src")
+    : process.cwd();
+  const dest = resolve(destDir, "instrumentation-client.ts");
+  if (existsSync(dest)) {
+    console.error(`${dest} already exists`);
+    process.exit(1);
+  }
+  copyFileSync(src, dest);
+  console.log(`Wrote ${dest}`);
 }
 
 function requireEnv() {
@@ -249,6 +268,8 @@ if (command === "allow-admin") {
   await deleteAdmin(parseEmail(rest));
 } else if (command === "deploy-notifs") {
   deployNotifs(rest);
+} else if (command === "init-instrumentation") {
+  initInstrumentation();
 } else {
   usage();
 }

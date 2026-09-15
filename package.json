@@ -36,6 +36,7 @@
     "allow-admin": "node scripts/cli.mjs allow-admin",
     "delete-admin": "node scripts/cli.mjs delete-admin",
     "deploy-notifs": "node scripts/cli.mjs deploy-notifs",
+    "init-instrumentation": "node scripts/cli.mjs init-instrumentation",
     "test:cucumber": "npx cucumber-js",
     "test:cucumber:admin": "npx cucumber-js -p admin"
   },
