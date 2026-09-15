@@ -11,6 +11,8 @@
     "src",
     "scripts/cli.mjs",
     "scripts/schema.sql",
+    "supabase/config.toml",
+    "supabase/functions",
     ".env.example",
     "instrumentation-client.ts.example"
   ],
@@ -33,6 +35,7 @@
     "lint:a11y": "eslint src --no-config-lookup --config eslint.a11y.config.mjs",
     "allow-admin": "node scripts/cli.mjs allow-admin",
     "delete-admin": "node scripts/cli.mjs delete-admin",
+    "deploy-notifs": "node scripts/cli.mjs deploy-notifs",
     "test:cucumber": "npx cucumber-js",
     "test:cucumber:admin": "npx cucumber-js -p admin"
   },

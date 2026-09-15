@@ -1,16 +1,17 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+
+const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 
 loadEnvLocal();
 
 function loadEnvLocal() {
   const file = resolve(process.cwd(), ".env.local");
-  if (!existsSync(file)) {
-    console.error(`No .env.local at ${file}`);
-    process.exit(1);
-  }
+  if (!existsSync(file)) return;
   const text = readFileSync(file, "utf8").replace(/^\uFEFF/, "");
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -32,10 +33,86 @@ function loadEnvLocal() {
 function usage(exit = true) {
   console.error("Usage: npx y2k-guestbook allow-admin you@gmail.com");
   console.error("       npx y2k-guestbook delete-admin you@gmail.com");
+  console.error("       npx y2k-guestbook deploy-notifs [--project-ref <ref>]");
   if (exit) process.exit(1);
 }
 
+function projectRefFromUrl(url) {
+  try {
+    return new URL(url).hostname.split(".")[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function parseProjectRef(args) {
+  const flag = args.indexOf("--project-ref");
+  if (flag >= 0) {
+    const value = args[flag + 1]?.trim();
+    if (!value || value.startsWith("-")) {
+      console.error("Missing value for --project-ref");
+      process.exit(1);
+    }
+    return value.startsWith("http") ? projectRefFromUrl(value) : value;
+  }
+  const positional = args.find((arg) => arg !== "--" && !arg.startsWith("-"));
+  if (positional) {
+    return positional.startsWith("http")
+      ? projectRefFromUrl(positional)
+      : positional;
+  }
+  return projectRefFromUrl(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+}
+
+function deployNotifs(args) {
+  const functionsDir = resolve(packageRoot, "supabase/functions");
+  const configFile = resolve(packageRoot, "supabase/config.toml");
+  if (!existsSync(functionsDir) || !existsSync(configFile)) {
+    console.error(
+      `No supabase Edge Functions at ${resolve(packageRoot, "supabase")}`,
+    );
+    process.exit(1);
+  }
+
+  const projectRef = parseProjectRef(args);
+  if (!projectRef) {
+    console.error(
+      "Missing project ref. Pass --project-ref <id> or set NEXT_PUBLIC_SUPABASE_URL in .env.local",
+    );
+    process.exit(1);
+  }
+
+  if (!process.env.SUPABASE_ACCESS_TOKEN?.trim()) {
+    console.error(
+      "Missing SUPABASE_ACCESS_TOKEN in the environment (or .env.local)",
+    );
+    process.exit(1);
+  }
+
+  const result = spawnSync(
+    "npx",
+    [
+      "--yes",
+      "supabase",
+      "functions",
+      "deploy",
+      "notify-admins",
+      "on-user-created",
+      "--project-ref",
+      projectRef,
+      "--use-api",
+    ],
+    { cwd: packageRoot, env: process.env, stdio: "inherit", shell: true },
+  );
+  process.exit(result.status ?? 1);
+}
+
 function requireEnv() {
+  const envFile = resolve(process.cwd(), ".env.local");
+  if (!existsSync(envFile)) {
+    console.error(`No .env.local at ${envFile}`);
+    process.exit(1);
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   const missing = [
@@ -170,6 +247,8 @@ if (command === "allow-admin") {
   await allowAdmin(parseEmail(rest));
 } else if (command === "delete-admin") {
   await deleteAdmin(parseEmail(rest));
+} else if (command === "deploy-notifs") {
+  deployNotifs(rest);
 } else {
   usage();
 }
