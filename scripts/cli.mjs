@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
@@ -121,62 +122,62 @@ function packagedFeatureArg(arg) {
   return arg;
 }
 
-function cucumberArgv(rawArgs) {
-  let profile = "default";
-  let sawFeature = false;
-  const forwarded = [];
-  const args = rawArgs.filter((arg) => arg !== "--");
-
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i];
-    if (arg === "-p" || arg === "--profile") {
-      profile = args[i + 1] ?? "default";
-      i += 1;
-      continue;
-    }
-    if (arg.startsWith("--profile=")) {
-      profile = arg.slice("--profile=".length) || "default";
-      continue;
-    }
-    const mapped = packagedFeatureArg(arg);
-    if (mapped !== arg) sawFeature = true;
-    forwarded.push(mapped);
-  }
-
-  const html =
-    profile === "admin"
-      ? "html:features/reports/admin.html"
-      : "html:features/reports/results.html";
-  const requireFiles = [
+function cucumberRequireGlobs() {
+  const globs = [
     posix(resolve(packageRoot, "features/support")) + "/**/*.ts",
     posix(resolve(packageRoot, "features/step_definitions")) + "/**/*.ts",
   ];
   const hostSteps = resolve(process.cwd(), "features/step_definitions");
   if (existsSync(hostSteps)) {
-    requireFiles.push(posix(hostSteps) + "/**/*.ts");
+    globs.push(posix(hostSteps) + "/**/*.ts");
   }
+  return globs;
+}
 
-  const prefix = [
-    "--require-module",
-    "tsx/cjs",
-    ...requireFiles.flatMap((glob) => ["--require", glob]),
-    "--format",
-    "progress-bar",
-    "--format",
-    html,
-    "--format-options",
-    JSON.stringify({ snippetInterface: "async-await" }),
-    "--world-parameters",
-    JSON.stringify({
-      baseUrl: "http://localhost:3000",
-      guestbookPath: "/",
-      adminPath: "/admin",
-    }),
-  ];
+function cucumberProfileYaml(htmlFile, requireGlobs) {
+  const requireBlock = requireGlobs
+    .map((glob) => `    - ${JSON.stringify(glob)}`)
+    .join("\n");
+  return `  requireModule:
+    - tsx/cjs
+  require:
+${requireBlock}
+  format:
+    - progress-bar
+    - html:${htmlFile}
+  formatOptions:
+    snippetInterface: async-await
+  worldParameters:
+    baseUrl: http://localhost:3000
+    guestbookPath: /
+    adminPath: /admin
+`;
+}
+
+function writeCucumberConfig() {
+  const requireGlobs = cucumberRequireGlobs();
+  const yaml = `default:
+${cucumberProfileYaml("features/reports/results.html", requireGlobs)}
+admin:
+${cucumberProfileYaml("features/reports/admin.html", requireGlobs)}
+`;
+  const file = join(tmpdir(), `y2k-guestbook-cucumber-${process.pid}.yaml`);
+  writeFileSync(file, yaml);
+  return file;
+}
+
+function cucumberArgv(rawArgs) {
+  let sawFeature = false;
+  const forwarded = [];
+  for (const arg of rawArgs.filter((item) => item !== "--")) {
+    const mapped = packagedFeatureArg(arg);
+    if (mapped !== arg) sawFeature = true;
+    forwarded.push(mapped);
+  }
   if (!sawFeature) {
     forwarded.push(posix(resolve(packageRoot, "features/features")));
   }
-  return [...prefix, ...forwarded];
+  return forwarded;
 }
 
 function runCucumber(args) {
@@ -190,12 +191,17 @@ function runCucumber(args) {
     recursive: true,
   });
 
-  const result = spawnSync("npx", ["--yes", "cucumber-js", ...cucumberArgv(args)], {
-    cwd: process.cwd(),
-    env: process.env,
-    stdio: "inherit",
-    shell: true,
-  });
+  const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+  const result = spawnSync(
+    npx,
+    ["--yes", "cucumber-js", "--config", writeCucumberConfig(), ...cucumberArgv(args)],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: "inherit",
+      shell: false,
+    },
+  );
   process.exit(result.status ?? 1);
 }
 
