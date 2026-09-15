@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -122,21 +130,25 @@ function packagedFeatureArg(arg) {
   return arg;
 }
 
-function cucumberRequireGlobs() {
-  const globs = [
-    posix(resolve(packageRoot, "features/support")) + "/**/*.ts",
-    posix(resolve(packageRoot, "features/step_definitions")) + "/**/*.ts",
-  ];
-  const hostSteps = resolve(process.cwd(), "features/step_definitions");
-  if (existsSync(hostSteps)) {
-    globs.push(posix(hostSteps) + "/**/*.ts");
-  }
-  return globs;
+function tsFiles(dir) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".ts"))
+    .map((name) => posix(resolve(dir, name)));
 }
 
-function cucumberProfileYaml(htmlFile, requireGlobs) {
-  const requireBlock = requireGlobs
-    .map((glob) => `    - ${JSON.stringify(glob)}`)
+function cucumberRequireFiles() {
+  const files = [
+    ...tsFiles(resolve(packageRoot, "features/support")),
+    ...tsFiles(resolve(packageRoot, "features/step_definitions")),
+    ...tsFiles(resolve(process.cwd(), "features/step_definitions")),
+  ];
+  return [...new Set(files)];
+}
+
+function cucumberProfileYaml(htmlFile, requireFiles) {
+  const requireBlock = requireFiles
+    .map((file) => `    - ${JSON.stringify(file)}`)
     .join("\n");
   return `  requireModule:
     - tsx/cjs
@@ -155,11 +167,17 @@ ${requireBlock}
 }
 
 function writeCucumberConfig() {
-  const requireGlobs = cucumberRequireGlobs();
+  const requireFiles = cucumberRequireFiles();
   const yaml = `default:
-${cucumberProfileYaml("features/reports/results.html", requireGlobs)}
+${cucumberProfileYaml(
+  posix(resolve(process.cwd(), "features/reports/results.html")),
+  requireFiles,
+)}
 admin:
-${cucumberProfileYaml("features/reports/admin.html", requireGlobs)}
+${cucumberProfileYaml(
+  posix(resolve(process.cwd(), "features/reports/admin.html")),
+  requireFiles,
+)}
 `;
   const file = join(tmpdir(), `y2k-guestbook-cucumber-${process.pid}.yaml`);
   writeFileSync(file, yaml);
@@ -180,21 +198,50 @@ function cucumberArgv(rawArgs) {
   return forwarded;
 }
 
+function resolveCucumberCli() {
+  try {
+    return createRequire(join(process.cwd(), "package.json")).resolve(
+      "@cucumber/cucumber/bin/cucumber.js",
+    );
+  } catch {
+    console.error(
+      "Install @cucumber/cucumber, playwright, and tsx in this app (see the tests guide).",
+    );
+    process.exit(1);
+  }
+}
+
 function runCucumber(args) {
   const featuresDir = resolve(packageRoot, "features/features");
   if (!existsSync(featuresDir)) {
     console.error(`No Cucumber features at ${featuresDir}`);
     process.exit(1);
   }
-  mkdirSync(resolve(process.cwd(), "features/reports"), { recursive: true });
+  const reportsDir = resolve(process.cwd(), "features/reports");
+  mkdirSync(reportsDir, { recursive: true });
   mkdirSync(resolve(process.cwd(), "features/support/.auth"), {
     recursive: true,
   });
 
-  const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+  const configFile = writeCucumberConfig();
+  const cucumberArgs = cucumberArgv(args);
+  const profileAdmin = cucumberArgs.some((arg, i) => {
+    const prev = cucumberArgs[i - 1];
+    return (
+      (arg === "admin" && (prev === "-p" || prev === "--profile")) ||
+      arg === "--profile=admin"
+    );
+  });
+  const htmlReport = profileAdmin
+    ? resolve(reportsDir, "admin.html")
+    : resolve(reportsDir, "results.html");
+
+  console.log(`Running Cucumber from ${featuresDir}`);
+  console.log(`HTML report: ${htmlReport}`);
+
   const result = spawnSync(
-    npx,
-    ["--yes", "cucumber-js", "--config", writeCucumberConfig(), ...cucumberArgv(args)],
+    process.execPath,
+    [resolveCucumberCli(), "--config", configFile, ...cucumberArgs],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -202,6 +249,10 @@ function runCucumber(args) {
       shell: false,
     },
   );
+  if (result.error) {
+    console.error(result.error.message);
+    process.exit(1);
+  }
   process.exit(result.status ?? 1);
 }
 
