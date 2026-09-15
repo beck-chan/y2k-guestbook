@@ -79,19 +79,28 @@ export async function openGuestbook(world: PlaywrightWorld, force = false) {
   await waitForGuestbookReady(world.page);
 }
 
+function adminHasFilterParams(world: PlaywrightWorld) {
+  try {
+    const here = new URL(world.page.url());
+    return [...here.searchParams.keys()].some((key) =>
+      ["q", "sort", "status", "email", "from", "to", "page"].includes(key),
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function openAdmin(world: PlaywrightWorld) {
-  if (!world.isAdminDashboard()) {
+  // Background means the clean dashboard. Staying on `/admin?from=…` leaks
+  // date/status filters into later scenarios (search then hides today's seeds).
+  if (!world.isAdminDashboard() || adminHasFilterParams(world)) {
     await world.page.goto(world.adminUrl(), { waitUntil: "domcontentloaded" });
   }
   await waitForAdminReady(world.page);
 }
 
 export async function reloadAdmin(world: PlaywrightWorld) {
-  if (world.isAdminDashboard()) {
-    await world.page.reload({ waitUntil: "domcontentloaded" });
-  } else {
-    await world.page.goto(world.adminUrl(), { waitUntil: "domcontentloaded" });
-  }
+  await world.page.goto(world.adminUrl(), { waitUntil: "domcontentloaded" });
   await waitForAdminReady(world.page);
 }
 
