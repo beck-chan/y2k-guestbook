@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
@@ -199,16 +199,44 @@ function cucumberArgv(rawArgs) {
 }
 
 function resolveCucumberCli() {
-  try {
-    return createRequire(join(process.cwd(), "package.json")).resolve(
-      "@cucumber/cucumber/bin/cucumber.js",
-    );
-  } catch {
+  const hostRequire = createRequire(join(process.cwd(), "package.json"));
+  let pkgDir = existsSync(
+    join(process.cwd(), "node_modules/@cucumber/cucumber/package.json"),
+  )
+    ? join(process.cwd(), "node_modules/@cucumber/cucumber")
+    : "";
+  if (!pkgDir) {
+    try {
+      let dir = dirname(hostRequire.resolve("@cucumber/cucumber"));
+      while (dir !== dirname(dir)) {
+        const pkgFile = join(dir, "package.json");
+        if (existsSync(pkgFile)) {
+          const pkg = JSON.parse(readFileSync(pkgFile, "utf8"));
+          if (pkg.name === "@cucumber/cucumber") {
+            pkgDir = dir;
+            break;
+          }
+        }
+        dir = dirname(dir);
+      }
+    } catch {
+      pkgDir = "";
+    }
+  }
+  if (!pkgDir) {
     console.error(
-      "Install @cucumber/cucumber, playwright, and tsx in this app (see the tests guide).",
+      "Install @cucumber/cucumber, playwright, and tsx in this app (refer to the Cucumber Test guide).",
     );
     process.exit(1);
   }
+  const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"));
+  const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.["cucumber-js"];
+  const cli = bin ? resolve(pkgDir, bin) : join(pkgDir, "bin/cucumber.js");
+  if (!existsSync(cli)) {
+    console.error(`Could not find cucumber-js at ${cli}`);
+    process.exit(1);
+  }
+  return cli;
 }
 
 function runCucumber(args) {
