@@ -87,8 +87,16 @@ export async function openAdmin(world: PlaywrightWorld) {
 }
 
 export async function reloadAdmin(world: PlaywrightWorld) {
-  await world.page.goto(world.adminUrl(), { waitUntil: "domcontentloaded" });
+  if (world.isAdminDashboard()) {
+    await world.page.reload({ waitUntil: "domcontentloaded" });
+  } else {
+    await world.page.goto(world.adminUrl(), { waitUntil: "domcontentloaded" });
+  }
   await waitForAdminReady(world.page);
+}
+
+export function adminCommentPages(page: Page) {
+  return page.locator('nav[aria-label="Admin comment pages"]');
 }
 
 export async function fillGuestComment(

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { seedComment } from "../support/seed";
 import {
   adminArticle,
+  adminCommentPages,
   openCommentsMenuIfNeeded,
   reloadAdmin,
   uniqueName,
@@ -454,20 +455,22 @@ Then("the comment is not removed", async function (this: PlaywrightWorld) {
 When(
   "an admin clicks the `next` link for comment pagination",
   async function (this: PlaywrightWorld) {
-    await this.page.getByRole("link", { name: "next" }).click();
-    await this.page.waitForLoadState("domcontentloaded");
+    const pages = adminCommentPages(this.page);
+    await pages.locator("a.comment-page").filter({ hasText: /^next$/i }).click();
+    await pages.locator(".comment-page-current").filter({ hasText: /^2$/ }).waitFor();
   },
 );
 
 When(
   "an admin clicks the `prev` link for comment pagination",
   async function (this: PlaywrightWorld) {
-    const prev = this.page.getByRole("link", { name: "prev" });
+    const pages = adminCommentPages(this.page);
+    const prev = pages.locator("a.comment-page").filter({ hasText: /^prev$/i });
     if (!(await prev.count())) {
-      await this.page.getByRole("link", { name: "next" }).click();
-      await this.page.waitForLoadState("domcontentloaded");
+      await pages.locator("a.comment-page").filter({ hasText: /^next$/i }).click();
+      await prev.waitFor();
     }
-    await this.page.getByRole("link", { name: "prev" }).click();
-    await this.page.waitForLoadState("domcontentloaded");
+    await prev.click();
+    await pages.locator(".comment-page-current").filter({ hasText: /^1$/ }).waitFor();
   },
 );

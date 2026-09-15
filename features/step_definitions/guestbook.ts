@@ -37,13 +37,14 @@ Given(
   "there are enough comments to trigger pagination",
   { timeout: 30_000 },
   async function (this: PlaywrightWorld) {
-    const onAdmin = this.page.url().startsWith(this.adminUrl());
+    const onAdmin = this.isAdminDashboard();
     const pageSize = onAdmin ? ADMIN_PAGE_SIZE : await publicPageSize();
     await ensureCommentsForPagination(pageSize + 1);
     if (onAdmin) {
       await reloadAdmin(this);
     } else {
-      await openGuestbook(this);
+      // Feature Background already opened the board before this seed.
+      await openGuestbook(this, true);
     }
     await assertNextEnabled(this.page, onAdmin ? "link" : "button");
   },
