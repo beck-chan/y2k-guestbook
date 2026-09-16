@@ -1,0 +1,69 @@
+import { NextResponse, type NextRequest } from "next/server";
+import {
+  guestbookAdminLoginPath,
+  guestbookAdminPath,
+  guestbookHomePath,
+} from "./lib/guestbookPaths";
+import { updateSession } from "./lib/supabase/proxy";
+
+function redirectWithCookies(url: URL, sessionResponse: NextResponse) {
+  const redirectResponse = NextResponse.redirect(url);
+  sessionResponse.cookies.getAll().forEach(({ name, value }) => {
+    redirectResponse.cookies.set(name, value);
+  });
+  return redirectResponse;
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const adminPath = guestbookAdminPath();
+  const loginPath = guestbookAdminLoginPath();
+  const isAdminPath =
+    pathname === adminPath || pathname.startsWith(`${adminPath}/`);
+  const isLogin = pathname === loginPath;
+
+  if (!isAdminPath) {
+    return NextResponse.next();
+  }
+
+  const { supabaseResponse, user, supabase } = await updateSession(request);
+
+  const role =
+    user && typeof user.app_metadata?.role === "string"
+      ? user.app_metadata.role
+      : null;
+  const isAdmin = role === "admin";
+
+  if (!user) {
+    if (isLogin) {
+      return supabaseResponse;
+    }
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = loginPath;
+    loginUrl.search = "";
+    return redirectWithCookies(loginUrl, supabaseResponse);
+  }
+
+  if (!isAdmin) {
+    await supabase.auth.signOut();
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = guestbookHomePath();
+    homeUrl.search = "admin_error=1";
+    return redirectWithCookies(homeUrl, supabaseResponse);
+  }
+
+  if (isLogin) {
+    const adminUrl = request.nextUrl.clone();
+    adminUrl.pathname = adminPath;
+    adminUrl.search = "";
+    return redirectWithCookies(adminUrl, supabaseResponse);
+  }
+
+  return supabaseResponse;
+}
+
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|css)$).*)",
+  ],
+};
