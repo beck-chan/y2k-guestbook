@@ -1,7 +1,7 @@
 @layer guestbook, custom-theme;
 
 @layer guestbook {
-:root {
+.guestbook-scope {
   --bg: #ffffff;
   --fg: #000000;
   --text: #111111;
@@ -12,7 +12,6 @@
   --link: #0000ee;
   --main-font: "Times New Roman", Times, serif;
   --accent-font: "Comic Sans MS", "Comic Sans", cursive;
-}
 
 .admin-page, .guestbook-page {
   color: var(--text);
@@ -52,10 +51,6 @@
   min-height: 0;
 }
 
-body:has(.route-loading-layer) {
-  overflow: hidden;
-}
-
 .page-enter {
   opacity: 0;
 }
@@ -78,16 +73,6 @@ body:has(.route-loading-layer) {
 
   .route-loading-layer {
     display: none;
-  }
-}
-
-@keyframes page-enter {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
   }
 }
 
@@ -422,12 +407,6 @@ body:has(.route-loading-layer) {
   padding: 0.12em 0 0.28em;
   padding-left: 100%;
   animation: guestbook-marquee 14s linear infinite;
-}
-
-@keyframes guestbook-marquee {
-  to {
-    transform: translateX(-100%);
-  }
 }
 
 .guestbook-login {
@@ -1513,8 +1492,40 @@ body:has(.route-loading-layer) {
 }
 }
 
+@keyframes page-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes guestbook-marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+body:has(.guestbook-scope .route-loading-layer) {
+  overflow: hidden;
+}
+}
+
 /* Admin auth error overlay (non-allowlisted Google sign-in) */
 .admin-auth-error-overlay {
+  --bg: #ffffff;
+  --fg: #000000;
+  --text: #111111;
+  --muted: #7f7f7f;
+  --accent: #9f9f9f;
+  --bubble: #f0f0f0;
+  --bubble-nested: #e1e1e1;
+  --link: #0000ee;
+  --main-font: "Times New Roman", Times, serif;
+  --accent-font: "Comic Sans MS", "Comic Sans", cursive;
+  font-family: var(--main-font);
   position: fixed;
   inset: 0;
   z-index: 80;

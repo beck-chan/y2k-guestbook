@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--bg);
-  --color-foreground: var(--text);
+  --color-background: #ffffff;
+  --color-foreground: #111111;
 }
 
 @import "./guestbook.css";

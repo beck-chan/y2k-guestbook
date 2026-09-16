@@ -55,7 +55,7 @@ export function PageReveal({
   }, [phase, pathname]);
 
   return (
-    <>
+    <div className="guestbook-scope">
       {phase !== "in" ? (
         <div
           className={["route-loading-layer", phase === "out" && "is-out"]
@@ -81,7 +81,7 @@ export function PageReveal({
           {children}
         </RevealContent>
       </Suspense>
-    </>
+    </div>
   );
 }
 
