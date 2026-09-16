@@ -12,12 +12,11 @@
   --link: #0000ee;
   --main-font: "Times New Roman", Times, serif;
   --accent-font: "Comic Sans MS", "Comic Sans", cursive;
-
-.admin-page, .guestbook-page {
+  min-height: 100vh;
+  min-height: 100dvh;
   color: var(--text);
   font-family: var(--main-font);
   background: var(--bg);
-}
 
 .route-loading {
   display: flex;
@@ -357,9 +356,6 @@
   position: relative;
   min-height: 100vh;
   padding: 2.5rem 3.5rem 4rem;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--main-font);
 }
 
 .admin-shell {

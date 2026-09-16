@@ -8,7 +8,7 @@ import {
 
 const STYLE_ID = "guestbook-custom-theme";
 const VARS_ID = "guestbook-theme-vars";
-const THEME_SCOPE = ".admin-page";
+const THEME_SCOPE = ".guestbook-scope";
 const HOIST_AT =
   /^@(?:import|charset|namespace|font-face|keyframes|property)\b/i;
 const GROUP_AT = /^@(?:media|supports|container|layer|scope)\b/i;
@@ -153,7 +153,7 @@ export function CustomTheme() {
   return (
     <>
       <style id={VARS_ID}>
-        {`.admin-page, .guestbook-themed { ${varsCss} }`}
+        {`.guestbook-scope, .guestbook-themed { ${varsCss} }`}
       </style>
       {css ? (
         <style
