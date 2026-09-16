@@ -91,8 +91,20 @@ function scopeSelector(selector: string) {
   if (!sel) {
     return sel;
   }
-  if (/^(:root|html|body)\b/.test(sel)) {
-    return sel.replace(/^(:root|html|body)\b/, THEME_SCOPE);
+  if (/^:root\b/.test(sel)) {
+    return sel.replace(/^:root\b/, THEME_SCOPE);
+  }
+  if (/^html\b/.test(sel)) {
+    return sel.replace(
+      /^html\b/,
+      `html:has(${THEME_SCOPE}), ${THEME_SCOPE}`,
+    );
+  }
+  if (/^body\b/.test(sel)) {
+    return sel.replace(
+      /^body\b/,
+      `body:has(${THEME_SCOPE}), ${THEME_SCOPE}`,
+    );
   }
 
   const first = firstCompound(sel);

@@ -1504,9 +1504,18 @@
   }
 }
 
+}
+
+html:has(.guestbook-scope),
+body:has(.guestbook-scope) {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
 body:has(.guestbook-scope .route-loading-layer) {
   overflow: hidden;
-}
 }
 
 /* Admin auth error overlay (non-allowlisted Google sign-in) */
