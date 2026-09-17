@@ -25,7 +25,7 @@ To prevent the release notes check from triggering an error, add the label: `int
 To update your y2k Guestbook package, call:
 
 ```bash
-npm install y2k-guestbook@github:beck-chan/y2k-guestbook
+npm update y2k-guestbook
 ```
 
 > **[Report an Issue](https://github.com/beck-chan/guestbook/issues)**
