@@ -20,6 +20,8 @@ To prevent the release notes check from triggering an error, add the label: `int
 
 <!-- Leave below untouched -->
 
+***
+
 To update your y2k Guestbook package, call:
 
 ```bash
