@@ -20,4 +20,10 @@ To prevent the release notes check from triggering an error, add the label: `int
 
 <!-- Leave below untouched -->
 
+To update your y2k Guestbook package, call:
+
+```bash
+npm install y2k-guestbook@github:beck-chan/y2k-guestbook
+```
+
 > **Browse my demo guestbook at: [https://y2k-guestbook.vercel.app](https://y2k-guestbook.vercel.app)**
