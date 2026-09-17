@@ -1,19 +1,9 @@
-function envFlag(name: string, fallback: boolean) {
-  const v = process.env[name];
-  if (v === undefined || v === "") return fallback;
-  return v === "true" || v === "1";
-}
-
-function envString(name: string, fallback: string) {
-  const v = process.env[name];
-  if (v === undefined) return fallback;
-  return v.trim();
+function envFlag(value: string | undefined, fallback: boolean) {
+  if (value === undefined || value === "") return fallback;
+  return value === "true" || value === "1";
 }
 
 export const flags = {
-  hitCounter: envFlag("FLAG_COUNTER", true),
-  /** Comma-separated paths/URLs for unique-visitor query (empty = all $pageview events). */
-  hitCounterUrl: envString("FLAG_COUNTER_URL", ""),
-  /** UTC instant YYYY-MM-DDTHH:mm:ssZ for unique-visitor query (empty = all time). */
-  hitCounterDate: envString("FLAG_COUNTER_DATE", "")
+  // Static process.env.* access so Next can inline these for client components.
+  hitCounter: envFlag(process.env.FLAG_COUNTER, true),
 };
