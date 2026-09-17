@@ -1,1 +1,1 @@
-export { GET } from "../src/app/api/hits/route";
+export { GET, dynamic } from "../src/app/api/hits/route";
