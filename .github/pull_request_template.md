@@ -28,4 +28,4 @@ To update your y2k Guestbook package, call:
 npm install y2k-guestbook@github:beck-chan/y2k-guestbook
 ```
 
-> **Browse my demo guestbook at: [https://y2k-guestbook.vercel.app](https://y2k-guestbook.vercel.app)**
+> **[Report an Issue](https://github.com/beck-chan/guestbook/issues)**
