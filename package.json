@@ -1,6 +1,6 @@
 {
   "name": "y2k-guestbook",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Drop-in y2k guestbook for Next.js App Router. Install from GitHub.",
   "bin": {

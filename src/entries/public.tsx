@@ -36,7 +36,7 @@ async function HomeBody() {
         admin login
       </a>
       <BuiltOn />
-      <HitCounter count={hitCount} enabled={flags.hitCounter} />
+      <HitCounter count={hitCount.count} error={hitCount.error} enabled={flags.hitCounter} />
       <div className="admin-shell">
         <GuestbookBoard
           initialComments={commentsPage.comments}
