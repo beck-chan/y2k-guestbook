@@ -176,7 +176,6 @@
   border: 0;
   background: transparent;
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   font-size: 1.45rem;
   font-weight: 400;
@@ -189,7 +188,6 @@
 
 .comment-action:hover {
   color: var(--link);
-  color: LinkText;
   text-decoration: none;
 }
 
@@ -218,7 +216,6 @@
   border: 0;
   background: transparent;
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   font-size: 1.45rem;
   font-weight: 400;
@@ -231,7 +228,6 @@
 
 .comment-page:hover {
   color: var(--link);
-  color: LinkText;
   text-decoration: none;
 }
 
@@ -413,10 +409,8 @@
   display: inline-block;
   padding: 0.35rem 0.7rem 0.4rem;
   border: 2px solid var(--link);
-  border-color: LinkText;
   background: var(--bg);
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   font-size: 1.85rem;
   font-weight: 400;
@@ -431,7 +425,6 @@
 .guestbook-login:hover,
 .guestbook-login:focus-visible {
   color: var(--link);
-  color: LinkText;
   text-decoration: underline;
 }
 
@@ -694,7 +687,6 @@
 
 .admin-comment-link {
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   font-size: 1.45rem;
   font-weight: 400;
@@ -706,7 +698,6 @@
 
 .admin-comment-link:hover {
   color: var(--link);
-  color: LinkText;
   text-decoration: none;
 }
 

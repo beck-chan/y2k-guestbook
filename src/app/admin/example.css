@@ -58,14 +58,12 @@ body {
 
 .comment-action {
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   text-decoration: underline;
 }
 
 .comment-action:hover {
   color: var(--link);
-  color: LinkText;
   text-decoration: none;
 }
 
@@ -75,14 +73,12 @@ body {
 
 .comment-page {
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   text-decoration: underline;
 }
 
 .comment-page:hover {
   color: var(--link);
-  color: LinkText;
   text-decoration: none;
 }
 
@@ -178,10 +174,8 @@ body {
 
 .guestbook-login {
   border: 2px solid var(--link);
-  border-color: LinkText;
   background: var(--bg);
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   text-decoration: underline;
 }
@@ -189,7 +183,6 @@ body {
 .guestbook-login:hover,
 .guestbook-login:focus-visible {
   color: var(--link);
-  color: LinkText;
   text-decoration: underline;
 }
 
@@ -265,14 +258,12 @@ body {
 
 .admin-comment-link {
   color: var(--link);
-  color: LinkText;
   font-family: var(--accent-font);
   text-decoration: underline;
 }
 
 .admin-comment-link:hover {
   color: var(--link);
-  color: LinkText;
   text-decoration: none;
 }
 
