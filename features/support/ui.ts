@@ -204,13 +204,14 @@ export async function topFigure(page: Page) {
 }
 
 export async function openCommentsMenuIfNeeded(page: Page) {
-  const sort = page.getByLabel("sort comments");
-  if (await sort.isVisible().catch(() => false)) {
-    return;
-  }
   const toggle = page.getByRole("button", { name: /comments menu/i });
+  // Desktop keeps the filters in view and hides this button.
+  // A narrow window collapses them into the bottom bar; the controls stay in the
+  // document, so a visibility check does not tell us the bar is closed.
+  if (!(await toggle.isVisible().catch(() => false))) return;
+  if ((await toggle.getAttribute("aria-expanded")) === "true") return;
   await toggle.click();
-  await sort.waitFor({ state: "visible" });
+  await page.getByLabel("sort comments").waitFor({ state: "visible", timeout: 8_000 });
 }
 
 export function adminArticle(page: Page, body: string) {
