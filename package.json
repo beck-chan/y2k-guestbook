@@ -15,6 +15,7 @@
     "supabase/functions",
     "features/features",
     "features/support/*.ts",
+    "features/support/testing.cjs",
     "features/step_definitions",
     ".env.example",
     "instrumentation-client.ts.example"
@@ -28,7 +29,7 @@
     "./hits": "./package/hits.ts",
     "./config": "./package/config.ts",
     "./styles.css": "./package/styles.css",
-    "./testing": "./features/support/fixtures.ts"
+    "./testing": "./features/support/testing.cjs"
   },
   "scripts": {
     "dev": "next dev",

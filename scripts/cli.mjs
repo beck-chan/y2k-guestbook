@@ -6,6 +6,8 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
@@ -13,12 +15,17 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
-const packageRoot = fileURLToPath(new URL("..", import.meta.url));
+function canonical(file) {
+  return realpathSync.native(file);
+}
+
+const packageRoot = canonical(fileURLToPath(new URL("..", import.meta.url)));
+const projectRoot = canonical(process.cwd());
 
 loadEnvLocal();
 
 function loadEnvLocal() {
-  const file = resolve(process.cwd(), ".env.local");
+  const file = resolve(projectRoot, ".env.local");
   if (!existsSync(file)) return;
   const text = readFileSync(file, "utf8").replace(/^\uFEFF/, "");
   for (const rawLine of text.split(/\r?\n/)) {
@@ -122,7 +129,7 @@ function posix(file) {
 }
 
 function relToCwd(abs) {
-  return posix(relative(process.cwd(), abs));
+  return posix(relative(projectRoot, abs));
 }
 
 function packagedFeatureArg(arg) {
@@ -249,16 +256,16 @@ function testArgv(rawArgs) {
 
 function resolvePkgDir(name) {
   const direct = [
-    join(process.cwd(), "node_modules", name),
+    join(projectRoot, "node_modules", name),
     join(packageRoot, "node_modules", name),
   ];
   for (const dir of direct) {
-    if (existsSync(join(dir, "package.json"))) return dir;
+    if (existsSync(join(dir, "package.json"))) return canonical(dir);
   }
-  for (const origin of [process.cwd(), packageRoot]) {
+  for (const origin of [projectRoot, packageRoot]) {
     try {
       const req = createRequire(join(origin, "package.json"));
-      return dirname(req.resolve(`${name}/package.json`));
+      return canonical(dirname(req.resolve(`${name}/package.json`)));
     } catch {
       // Try the package root next, then tell the user to install.
     }
@@ -277,25 +284,70 @@ function pkgBin(pkgDir, binName) {
   return cli;
 }
 
-function stepGlobs() {
-  const dirs = [
-    resolve(packageRoot, "features/step_definitions"),
-    resolve(process.cwd(), "features/step_definitions"),
-  ];
-  const fixtures = posix(resolve(packageRoot, "features/support/fixtures.ts"));
-  const unique = [...new Set(dirs.map((dir) => posix(dir)))].filter((dir) => existsSync(dir));
-  return [fixtures, ...unique];
+function installedRuntimeRoot() {
+  const normalized = packageRoot.replaceAll("\\", "/");
+  if (!normalized.includes("/node_modules/y2k-guestbook")) return "";
+  return resolve(projectRoot, "features/reports/.y2k-runtime");
 }
 
-function writePlaywrightConfig(featurePaths, reportDir) {
+function materializeInstalledTests() {
+  const dest = installedRuntimeRoot();
+  if (!dest) return packageRoot;
+  // Node will not run the TypeScript that ships inside node_modules.
+  // Copy the steps next to the host project, which is where the clone runs them.
+  rmSync(dest, { recursive: true, force: true });
+  mkdirSync(resolve(dest, "src/lib"), { recursive: true });
+  cpSync(resolve(packageRoot, "features/support"), resolve(dest, "features/support"), {
+    recursive: true,
+  });
+  cpSync(
+    resolve(packageRoot, "features/step_definitions"),
+    resolve(dest, "features/step_definitions"),
+    { recursive: true },
+  );
+  for (const file of [
+    "src/lib/comments.ts",
+    "src/lib/guestbookPaths.ts",
+    "src/lib/guestbookSettingsShared.ts",
+  ]) {
+    cpSync(resolve(packageRoot, file), resolve(dest, file));
+  }
+  return dest;
+}
+
+function uniqueExisting(paths) {
+  const unique = [];
+  for (const file of paths) {
+    const posixFile = posix(file);
+    if (!existsSync(posixFile)) continue;
+    const key = process.platform === "win32" ? posixFile.toLowerCase() : posixFile;
+    const seen = unique.some((item) => {
+      const itemKey = process.platform === "win32" ? item.toLowerCase() : item;
+      return itemKey === key;
+    });
+    if (!seen) unique.push(posixFile);
+  }
+  return unique;
+}
+
+function stepGlobs(runtime) {
+  const dirs = uniqueExisting([
+    resolve(runtime, "features/step_definitions"),
+    resolve(projectRoot, "features/step_definitions"),
+  ]);
+  const fixtures = posix(resolve(runtime, "features/support/fixtures.ts"));
+  return [fixtures, ...dirs];
+}
+
+function writePlaywrightConfig(featurePaths, reportDir, runtime) {
   const featuresRoot = posix(resolve(packageRoot, "features"));
-  const outputDir = posix(resolve(process.cwd(), "features/reports/.features-gen"));
+  const outputDir = posix(resolve(projectRoot, "features/reports/.features-gen"));
   const source = `import { defineConfig } from "@playwright/test";
 import { defineBddConfig } from "playwright-bdd";
 
 const testDir = defineBddConfig({
-  features: ${JSON.stringify(featurePaths.map((file) => posix(resolve(process.cwd(), file))))},
-  steps: ${JSON.stringify(stepGlobs())},
+  features: ${JSON.stringify(featurePaths.map((file) => posix(resolve(projectRoot, file))))},
+  steps: ${JSON.stringify(stepGlobs(runtime))},
   featuresRoot: ${JSON.stringify(featuresRoot)},
   outputDir: ${JSON.stringify(outputDir)},
   missingSteps: "fail-on-run",
@@ -317,30 +369,37 @@ export default defineConfig({
 });
 `;
   const relative = "features/reports/playwright.config.ts";
-  writeFileSync(resolve(process.cwd(), relative), source);
+  writeFileSync(resolve(projectRoot, relative), source);
   return relative;
 }
 
-function testEnv() {
+function testEnv(runtime) {
   const extra = dirname(packageRoot);
   const sep = process.platform === "win32" ? ";" : ":";
   const current = process.env.NODE_PATH || "";
   const parts = current.split(sep).filter(Boolean);
   if (!parts.includes(extra)) parts.unshift(extra);
-  return { ...process.env, NODE_PATH: parts.join(sep) };
+  const env = { ...process.env, NODE_PATH: parts.join(sep) };
+  if (runtime !== packageRoot) {
+    env.Y2K_GUESTBOOK_TESTING_ENTRY = resolve(
+      runtime,
+      "features/support/fixtures.ts",
+    );
+  }
+  return env;
 }
 
-function runNode(script, args) {
+function runNode(script, args, runtime) {
   return spawnSync(process.execPath, [script, ...args], {
-    cwd: process.cwd(),
-    env: testEnv(),
+    cwd: projectRoot,
+    env: testEnv(runtime),
     stdio: "inherit",
     shell: false,
   });
 }
 
 function copyReport(fromDir, toSpec) {
-  const dest = resolve(process.cwd(), toSpec);
+  const dest = resolve(projectRoot, toSpec);
   if (resolve(dest) === resolve(fromDir)) return;
   mkdirSync(dirname(dest), { recursive: true });
   cpSync(fromDir, dest, { recursive: true });
@@ -362,16 +421,17 @@ function runFeatureTests(args) {
     process.exit(1);
   }
 
-  const reportsDir = resolve(process.cwd(), "features/reports");
+  const reportsDir = resolve(projectRoot, "features/reports");
   mkdirSync(reportsDir, { recursive: true });
-  mkdirSync(resolve(process.cwd(), "features/support/.auth"), {
+  mkdirSync(resolve(projectRoot, "features/support/.auth"), {
     recursive: true,
   });
+  const runtime = materializeInstalledTests();
 
   const { forwarded, featurePaths, tags, grep, profileAdmin, extraReports } =
     testArgv(args);
   const reportDir = resolve(reportsDir, profileAdmin ? "admin" : "results");
-  const configFile = writePlaywrightConfig(featurePaths, reportDir);
+  const configFile = writePlaywrightConfig(featurePaths, reportDir, runtime);
 
   console.log(
     `Feature files:\n${featurePaths.map((file) => `  ${file}`).join("\n")}`,
@@ -382,7 +442,7 @@ function runFeatureTests(args) {
 
   const bddArgs = ["-c", configFile];
   if (tags) bddArgs.push("--tags", tags);
-  const generated = runNode(pkgBin(bddDir, "bddgen"), bddArgs);
+  const generated = runNode(pkgBin(bddDir, "bddgen"), bddArgs, runtime);
   if (generated.error) {
     console.error(generated.error.message);
     process.exit(1);
@@ -391,7 +451,7 @@ function runFeatureTests(args) {
 
   const playwrightArgs = ["test", "-c", configFile, "--workers=1", ...forwarded];
   if (grep) playwrightArgs.push("--grep", grep);
-  const result = runNode(pkgBin(playwrightDir, "playwright"), playwrightArgs);
+  const result = runNode(pkgBin(playwrightDir, "playwright"), playwrightArgs, runtime);
   if (existsSync(reportDir)) {
     for (const extra of extraReports) copyReport(reportDir, extra);
   }
@@ -408,9 +468,9 @@ function initInstrumentation() {
     console.error(`No instrumentation-client.ts.example at ${src}`);
     process.exit(1);
   }
-  const destDir = existsSync(resolve(process.cwd(), "src"))
-    ? resolve(process.cwd(), "src")
-    : process.cwd();
+  const destDir = existsSync(resolve(projectRoot, "src"))
+    ? resolve(projectRoot, "src")
+    : projectRoot;
   const dest = resolve(destDir, "instrumentation-client.ts");
   if (existsSync(dest)) {
     console.error(`${dest} already exists`);
@@ -421,7 +481,7 @@ function initInstrumentation() {
 }
 
 function requireEnv() {
-  const envFile = resolve(process.cwd(), ".env.local");
+  const envFile = resolve(projectRoot, ".env.local");
   if (!existsSync(envFile)) {
     console.error(`No .env.local at ${envFile}`);
     process.exit(1);
@@ -434,7 +494,7 @@ function requireEnv() {
   ].filter(Boolean);
   if (missing.length) {
     console.error(
-      `Missing ${missing.join(" and ")} in ${resolve(process.cwd(), ".env.local")}`,
+      `Missing ${missing.join(" and ")} in ${resolve(projectRoot, ".env.local")}`,
     );
     process.exit(1);
   }
