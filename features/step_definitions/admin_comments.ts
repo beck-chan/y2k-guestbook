@@ -34,7 +34,8 @@ async function submitSearch(this: PlaywrightWorld, query: string) {
     { timeout: 8_000 },
   );
   await this.page.waitForLoadState("domcontentloaded");
-  await adminArticle(this.page, query).waitFor({ timeout: 8_000 });
+  // A keyword can match more than one comment, including an earlier seeded body.
+  await adminArticle(this.page, query).first().waitFor({ timeout: 8_000 });
 }
 
 function commentsLede(this: PlaywrightWorld) {
