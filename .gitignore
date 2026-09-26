@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/test-results/
 /features/reports/
 /features/support/.auth/
 scripts/stop-dev.mjs
