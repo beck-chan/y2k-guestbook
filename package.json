@@ -10,6 +10,7 @@
     "package",
     "src",
     "scripts/cli.mjs",
+    "scripts/check-update.mjs",
     "scripts/schema.sql",
     "supabase/config.toml",
     "supabase/functions",

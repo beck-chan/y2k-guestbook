@@ -1,3 +1,4 @@
+import { checkForUpdate } from "../../scripts/check-update.mjs";
 import {
   guestbookAdminExamplePath,
   guestbookAdminPath,
@@ -31,6 +32,7 @@ function guestbookRewrites(): Rewrite[] {
 export function withGuestbookConfig<T extends GuestbookHostConfig>(
   config: T = {} as T,
 ) {
+  void checkForUpdate();
   const extra = guestbookRewrites();
 
   return {

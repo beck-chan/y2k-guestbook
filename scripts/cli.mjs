@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
   cpSync,
@@ -614,7 +614,24 @@ async function deleteAdmin(email) {
   );
 }
 
+function scheduleUpdateCheck() {
+  if (process.env.CI) return;
+  const flag = (process.env.Y2K_GUESTBOOK_DISABLE_UPDATE_CHECK ?? "")
+    .trim()
+    .toLowerCase();
+  if (flag === "1" || flag === "true" || flag === "yes") return;
+  const child = spawn(
+    process.execPath,
+    [join(packageRoot, "scripts/check-update.mjs")],
+    { detached: true, stdio: "inherit", windowsHide: true },
+  );
+  child.on("error", () => {});
+  child.unref();
+}
+
 const [command, ...rest] = process.argv.slice(2);
+
+if (command !== "test") scheduleUpdateCheck();
 
 if (command === "allow-admin") {
   await allowAdmin(parseEmail(rest));
