@@ -8,18 +8,18 @@ export const test = base.extend<
   { closeGuestbookBrowsers: void }
 >({
   closeGuestbookBrowsers: [
-    async ({}, use) => {
-      await use();
+    async ({}, run) => {
+      await run();
       await closeBrowsers();
     },
     { scope: "worker", auto: true },
   ],
-  world: async ({}, use, testInfo: TestInfo) => {
+  world: async ({}, run, testInfo: TestInfo) => {
     const world = new PlaywrightWorld();
     world.scenarioName = testInfo.title;
     await prepareScenario(world, testInfo.file);
     try {
-      await use(world);
+      await run(world);
     } finally {
       await finishScenario(world, testInfo.file, testInfo);
     }

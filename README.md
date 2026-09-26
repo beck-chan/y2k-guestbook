@@ -8,7 +8,7 @@ Are you nostalgic for the days of the Geocities guestbooks? If so, learn how to 
 - Vercel to deploy your finished application to the web
 - (Optional) PostHog to capture analytics and display a visitor hit counter
 
-Also provided are starter Cucumber tests to help you automatically verify default functionality that ships with the guestbook application with Playwright.
+Also provided are starter Gherkin specifications and step definitions to help you automatically verify default functionality that ships with the guestbook application with Playwright.
 
 ### Demos
 
