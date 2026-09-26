@@ -1,9 +1,4 @@
 import { config } from "dotenv";
-import {
-  IWorldOptions,
-  setWorldConstructor,
-  World,
-} from "@cucumber/cucumber";
 import type { Browser, BrowserContext, Page } from "playwright";
 
 config({ path: ".env.local" });
@@ -30,7 +25,7 @@ export type LastSetting =
   | "rateLimits"
   | "allowList";
 
-export class PlaywrightWorld extends World {
+export class PlaywrightWorld {
   browser!: Browser;
   context!: BrowserContext;
   page!: Page;
@@ -39,6 +34,8 @@ export class PlaywrightWorld extends World {
   adminPath: string;
   expectAdmin = true;
   incognito = false;
+  /** Fresh context for this scenario. Shared admin and SSO windows stay open. */
+  ownsContext = false;
   postedName?: string;
   postedBody?: string;
   lastSetting?: LastSetting;
@@ -52,22 +49,11 @@ export class PlaywrightWorld extends World {
   seededNewerBody?: string;
   scenarioName?: string;
 
-  constructor(options: IWorldOptions) {
-    super(options);
+  constructor() {
     const fromEnv = process.env.BASE_URL;
-    const fromConfig = options.parameters.baseUrl;
-    this.baseUrl = String(fromEnv ?? fromConfig ?? "http://localhost:3000").replace(
-      /\/$/,
-      "",
-    );
-    const guestbook =
-      process.env.NEXT_PUBLIC_GUESTBOOK_PATH ||
-      options.parameters.guestbookPath ||
-      "/";
-    const admin =
-      process.env.NEXT_PUBLIC_GUESTBOOK_ADMIN_PATH ||
-      options.parameters.adminPath ||
-      "/admin";
+    this.baseUrl = String(fromEnv ?? "http://localhost:3000").replace(/\/$/, "");
+    const guestbook = process.env.NEXT_PUBLIC_GUESTBOOK_PATH || "/";
+    const admin = process.env.NEXT_PUBLIC_GUESTBOOK_ADMIN_PATH || "/admin";
     this.guestbookPath = stripSlash(String(guestbook)) === "" ? "/" : stripSlash(String(guestbook));
     this.adminPath = stripSlash(String(admin));
   }
@@ -113,5 +99,3 @@ export class PlaywrightWorld extends World {
     }
   }
 }
-
-setWorldConstructor(PlaywrightWorld);

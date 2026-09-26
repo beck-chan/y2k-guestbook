@@ -1,4 +1,4 @@
-import { Then, When } from "@cucumber/cucumber";
+import { Then, When } from "../support/fixtures";
 import assert from "node:assert/strict";
 import { resetGuestRateLimits } from "../support/seed";
 import {

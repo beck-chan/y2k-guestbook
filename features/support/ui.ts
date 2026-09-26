@@ -15,12 +15,17 @@ export function uniqueName() {
 const READY_MS = 10_000;
 const SUBMIT_MS = 10_000;
 
+function composeForm(page: Page) {
+  // PageReveal can leave a second copy in the document until the overlay unmounts.
+  return page.locator("form.comment-compose").first();
+}
+
 async function waitForReactSubmit(page: Page, selector: string) {
-  await page.locator(selector).waitFor({ state: "attached" });
   await page
     .locator(".route-loading-layer")
     .waitFor({ state: "detached", timeout: READY_MS })
     .catch(() => undefined);
+  await page.locator(selector).first().waitFor({ state: "attached" });
   await page.waitForFunction(
     (sel) => {
       const form = document.querySelector(sel);
@@ -112,7 +117,7 @@ export async function fillGuestComment(
   page: Page,
   input: { name: string; body: string; email?: string },
 ) {
-  const form = page.locator("form.comment-compose");
+  const form = composeForm(page);
   await form.getByLabel("display name").fill(input.name);
   if (input.email != null) {
     await form.locator('input[name="email"]').waitFor();
@@ -122,9 +127,7 @@ export async function fillGuestComment(
 }
 
 export async function clickSubmit(page: Page) {
-  const button = page
-    .locator("form.comment-compose")
-    .getByRole("button", { name: "submit" });
+  const button = composeForm(page).getByRole("button", { name: "submit" });
   await button.click();
   const submitted = new URL(page.url());
   if (
@@ -201,13 +204,14 @@ export async function topFigure(page: Page) {
 }
 
 export async function openCommentsMenuIfNeeded(page: Page) {
-  const sort = page.getByLabel("sort comments");
-  if (await sort.isVisible().catch(() => false)) {
-    return;
-  }
   const toggle = page.getByRole("button", { name: /comments menu/i });
+  // Desktop keeps the filters in view and hides this button.
+  // A narrow window collapses them into the bottom bar; the controls stay in the
+  // document, so a visibility check does not tell us the bar is closed.
+  if (!(await toggle.isVisible().catch(() => false))) return;
+  if ((await toggle.getAttribute("aria-expanded")) === "true") return;
   await toggle.click();
-  await sort.waitFor({ state: "visible" });
+  await page.getByLabel("sort comments").waitFor({ state: "visible", timeout: 8_000 });
 }
 
 export function adminArticle(page: Page, body: string) {
