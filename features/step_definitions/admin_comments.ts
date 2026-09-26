@@ -1,4 +1,4 @@
-import { Given, Then, When } from "@cucumber/cucumber";
+import { Given, Then, When } from "../support/fixtures";
 import assert from "node:assert/strict";
 import { seedComment } from "../support/seed";
 import {

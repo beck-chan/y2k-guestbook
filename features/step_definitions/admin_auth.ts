@@ -1,4 +1,4 @@
-import { Given, Then, When } from "@cucumber/cucumber";
+import { Given, Then, When } from "../support/fixtures";
 import assert from "node:assert/strict";
 import {
   MOBILE,
@@ -46,7 +46,6 @@ Given(
 
 Given(
   "an authorized admin is signed in with Google SSO",
-  { timeout: SSO_TIMEOUT_MS },
   async function (this: PlaywrightWorld) {
     this.expectAdmin = true;
     await openAdmin(this);
@@ -78,7 +77,6 @@ Given(
 
 Given(
   "the user is shown a message that they do not have admin authorization",
-  { timeout: SSO_TIMEOUT_MS },
   async function (this: PlaywrightWorld) {
     await ensureIncognitoContext(this, true);
     const close = this.page.getByRole("button", { name: "Close" });
@@ -94,7 +92,6 @@ Given(
 
 When(
   "they sign in successfully with Google",
-  { timeout: SSO_TIMEOUT_MS },
   async function (this: PlaywrightWorld) {
     await waitForGoogleSignIn(
       this,

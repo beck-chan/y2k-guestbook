@@ -13,7 +13,6 @@
     "scripts/schema.sql",
     "supabase/config.toml",
     "supabase/functions",
-    "cucumber.yaml",
     "features/features",
     "features/support/*.ts",
     "features/step_definitions",
@@ -28,7 +27,8 @@
     "./example-css": "./package/example-css.ts",
     "./hits": "./package/hits.ts",
     "./config": "./package/config.ts",
-    "./styles.css": "./package/styles.css"
+    "./styles.css": "./package/styles.css",
+    "./testing": "./features/support/fixtures.ts"
   },
   "scripts": {
     "dev": "next dev",
@@ -61,10 +61,7 @@
     "rate-limiter-flexible": "^11.2.0"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^13.2.1",
-    "next": "16.3.3",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -73,10 +70,13 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "next": "16.3.3",
     "playwright": "^1.63.0",
+    "playwright-bdd": "^9.2.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "supabase": "^2.117.0",
     "tailwindcss": "^4",
-    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

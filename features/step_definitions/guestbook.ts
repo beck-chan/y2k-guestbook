@@ -1,4 +1,4 @@
-import { Given, Then, When } from "@cucumber/cucumber";
+import { Given, Then, When } from "../support/fixtures";
 import assert from "node:assert/strict";
 import { MOBILE } from "../support/hooks";
 import { ensureCommentsForPagination, publicPageSize } from "../support/seed";
@@ -35,7 +35,6 @@ Given(
 
 Given(
   "there are enough comments to trigger pagination",
-  { timeout: 30_000 },
   async function (this: PlaywrightWorld) {
     const onAdmin = this.isAdminDashboard();
     const pageSize = onAdmin ? ADMIN_PAGE_SIZE : await publicPageSize();

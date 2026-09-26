@@ -2,14 +2,8 @@ import { spawn } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import type { TestInfo } from "@playwright/test";
 import { config } from "dotenv";
-import {
-  After,
-  AfterAll,
-  Before,
-  BeforeAll,
-  setDefaultTimeout,
-} from "@cucumber/cucumber";
 import {
   chromium,
   type Browser,
@@ -22,14 +16,8 @@ import { resetGuestRateLimits, restoreDefaultSettings } from "./seed";
 
 config({ path: ".env.local" });
 
-const STEP_TIMEOUT_MS = 15_000;
 /** Headed Google SSO: pick an account in the opened browser. */
 export const SSO_TIMEOUT_MS = 180_000;
-
-setDefaultTimeout(STEP_TIMEOUT_MS);
-if (process.env.HEADED === "1") {
-  setDefaultTimeout(SSO_TIMEOUT_MS);
-}
 
 const AUTH_DIR = path.join("features", "support", ".auth");
 const AUTH_FILE = path.join(AUTH_DIR, "admin.json");
@@ -88,7 +76,7 @@ async function launchBrowser(): Promise<Browser> {
   const launched = await chromium.launch(options);
   const via = options.channel ?? "playwright-chromium";
   console.log(
-    `Cucumber browser: ${via} ${launched.version()}${options.headless ? " (headless)" : ""}`,
+    `Playwright browser: ${via} ${launched.version()}${options.headless ? " (headless)" : ""}`,
   );
   return launched;
 }
@@ -229,7 +217,7 @@ async function getNormalChromeProfile() {
     throw new Error("Connected to Chrome over CDP but found no browser context.");
   }
   await hideAutomation(persistentChrome);
-  console.log(`Cucumber SSO: attached to Chrome ${cdpBrowser.version()} at ${chromeCdpUrl()}`);
+  console.log(`Playwright SSO: attached to Chrome ${cdpBrowser.version()} at ${chromeCdpUrl()}`);
   return persistentChrome;
 }
 
@@ -289,6 +277,9 @@ export async function ensureIncognitoContext(
   if (reuse) {
     sharedUnauthorizedContext = context;
     sharedUnauthorizedPage = world.page;
+  } else {
+    world.ownsContext = true;
+    await startTrace(context);
   }
 }
 
@@ -307,30 +298,28 @@ function isGuestbookSuite(uri: string) {
   );
 }
 
-BeforeAll(async function () {
-  if (!isHeaded()) {
-    browser = await launchBrowser();
-  }
-});
+async function startTrace(context: BrowserContext) {
+  await context.tracing.start({ screenshots: true, snapshots: true });
+}
 
-Before({ timeout: SSO_TIMEOUT_MS }, async function (this: PlaywrightWorld, { pickle }) {
-  this.scenarioName = pickle.name;
-  const unauthorized = isUnauthorized(pickle.uri);
-  const guestbook = isGuestbookSuite(pickle.uri);
-  const admin = isAdminSuite(pickle.uri);
-  setDefaultTimeout(admin ? SSO_TIMEOUT_MS : STEP_TIMEOUT_MS);
+export async function prepareScenario(world: PlaywrightWorld, file: string) {
+  const unauthorized = isUnauthorized(file);
+  const guestbook = isGuestbookSuite(file);
+  const admin = isAdminSuite(file);
   if (unauthorized) {
-    await ensureIncognitoContext(this, true);
+    await ensureIncognitoContext(world, true);
   } else if (guestbook) {
-    await ensureIncognitoContext(this, false);
+    await ensureIncognitoContext(world, false);
   } else if (admin) {
-    await ensureSharedAdminContext(this);
+    await ensureSharedAdminContext(world);
   } else {
     const main = await getMainBrowser();
-    this.browser = main;
-    this.context = await main.newContext({ viewport: DESKTOP });
-    this.page = await this.context.newPage();
-    this.incognito = false;
+    world.browser = main;
+    world.context = await main.newContext({ viewport: DESKTOP });
+    world.page = await world.context.newPage();
+    world.incognito = false;
+    world.ownsContext = true;
+    await startTrace(world.context);
   }
   if (guestbook) {
     try {
@@ -339,7 +328,7 @@ Before({ timeout: SSO_TIMEOUT_MS }, async function (this: PlaywrightWorld, { pic
       console.error("Failed to reset guest rate limits:", err);
     }
   }
-  if (isSettings(pickle.uri)) {
+  if (isSettings(file)) {
     try {
       await restoreDefaultSettings();
       await resetGuestRateLimits();
@@ -347,12 +336,16 @@ Before({ timeout: SSO_TIMEOUT_MS }, async function (this: PlaywrightWorld, { pic
       console.error("Failed to reset guestbook settings:", err);
     }
   }
-});
+}
 
-After(async function (this: PlaywrightWorld, { pickle }) {
+export async function finishScenario(
+  world: PlaywrightWorld,
+  file: string,
+  testInfo: TestInfo,
+) {
   if (
-    isAdminSuite(pickle.uri) &&
-    !isUnauthorized(pickle.uri) &&
+    isAdminSuite(file) &&
+    !isUnauthorized(file) &&
     sharedAdminContext &&
     !isHeaded()
   ) {
@@ -364,7 +357,7 @@ After(async function (this: PlaywrightWorld, { pickle }) {
     }
   }
 
-  if (isSettings(pickle.uri)) {
+  if (isSettings(file)) {
     try {
       await restoreDefaultSettings();
       await resetGuestRateLimits();
@@ -373,12 +366,29 @@ After(async function (this: PlaywrightWorld, { pickle }) {
     }
   }
 
-  if (!isSharedPage(this.page) && this.context) {
-    await this.context.close();
+  if (world.ownsContext && world.context) {
+    const failed = testInfo.status !== testInfo.expectedStatus;
+    try {
+      if (failed) {
+        const tracePath = testInfo.outputPath("trace.zip");
+        await world.context.tracing.stop({ path: tracePath });
+        await testInfo.attach("trace", {
+          path: tracePath,
+          contentType: "application/zip",
+        });
+      } else {
+        await world.context.tracing.stop();
+      }
+    } catch (err) {
+      console.error("Failed to save Playwright trace:", err);
+    }
+    await world.context.close().catch(() => undefined);
+  } else if (!isSharedPage(world.page) && world.context) {
+    await world.context.close().catch(() => undefined);
   }
-});
+}
 
-AfterAll(async function () {
+export async function closeBrowsers() {
   if (cdpBrowser) {
     await sharedUnauthorizedPage?.close().catch(() => undefined);
     if (sharedAdminPage && sharedAdminPage !== sharedUnauthorizedPage) {
@@ -394,9 +404,15 @@ AfterAll(async function () {
   }
   await persistentChrome?.close().catch(() => undefined);
   await browser?.close();
-  if (incognitoBrowser) {
-    await incognitoBrowser.close();
-  }
-});
+  if (incognitoBrowser) await incognitoBrowser.close();
+  browser = undefined;
+  incognitoBrowser = undefined;
+  persistentChrome = undefined;
+  cdpBrowser = undefined;
+  sharedAdminContext = undefined;
+  sharedAdminPage = undefined;
+  sharedUnauthorizedContext = undefined;
+  sharedUnauthorizedPage = undefined;
+}
 
 export { MOBILE, DESKTOP, AUTH_FILE };
