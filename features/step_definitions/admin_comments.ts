@@ -288,7 +288,11 @@ Given(
 
 When("they click the `clear all` link", async function (this: PlaywrightWorld) {
   await openCommentsMenuIfNeeded(this.page);
-  await this.page.getByRole("link", { name: "clear all" }).click();
+  // Next.js client navigation does not fire a full load, and a headed run waits minutes for one.
+  await this.page.getByRole("link", { name: "clear all" }).click({
+    noWaitAfter: true,
+    timeout: 8_000,
+  });
   await this.page.waitForFunction(
     () => {
       const params = new URL(location.href).searchParams;
