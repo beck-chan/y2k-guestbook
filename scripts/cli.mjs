@@ -487,10 +487,10 @@ function requireEnv() {
     process.exit(1);
   }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SECRET_KEY?.trim();
   const missing = [
     !url && "NEXT_PUBLIC_SUPABASE_URL",
-    !serviceRoleKey && "SUPABASE_SERVICE_ROLE_KEY",
+    !serviceRoleKey && "SUPABASE_SECRET_KEY",
   ].filter(Boolean);
   if (missing.length) {
     console.error(
